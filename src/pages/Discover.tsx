@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Search, SlidersHorizontal, MapPin, GraduationCap, X, List, LayoutGrid } from "lucide-react";
+import { Search, SlidersHorizontal, MapPin, GraduationCap, X, List, LayoutGrid, Lock } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { useAuth } from "@/contexts/AuthContext";
 
 const INDUSTRIES = ["AgriTech", "FinTech", "EdTech", "HealthTech", "CleanTech", "Logistics", "E-commerce", "AI/ML"];
 const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B+"];
