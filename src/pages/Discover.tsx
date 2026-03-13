@@ -26,6 +26,7 @@ const ALL_STARTUPS = [
 ];
 
 export default function Discover() {
+  const { user, loading } = useAuth();
   const [search, setSearch] = useState("");
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [selectedStages, setSelectedStages] = useState<string[]>([]);
