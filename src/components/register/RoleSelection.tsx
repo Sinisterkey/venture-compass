@@ -6,7 +6,6 @@ const ROLES: { value: Role; label: string; description: string; icon: string }[]
   { value: "founder", label: "Founder", description: "Showcase your startup and connect with investors", icon: "🚀" },
   { value: "investor", label: "Investor", description: "Discover deal flow and manage your pipeline", icon: "💰" },
   { value: "mentor", label: "Mentor", description: "Guide startups with your expertise", icon: "🎯" },
-  { value: "university", label: "University", description: "Showcase student innovations and research", icon: "🎓" },
 ];
 
 interface Props {
