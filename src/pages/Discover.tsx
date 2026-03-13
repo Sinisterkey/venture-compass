@@ -167,8 +167,32 @@ export default function Discover() {
             )}
 
             {/* Results */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 relative">
               <p className="text-xs text-muted-foreground mb-4">{filtered.length} ventures found</p>
+
+              {/* Auth gate overlay */}
+              {!loading && !user && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-md rounded-lg" />
+                  <div className="relative z-20 text-center p-8 max-w-sm">
+                    <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 mx-auto mb-4">
+                      <Lock className="h-6 w-6 text-primary" />
+                    </div>
+                    <h3 className="font-display text-lg font-bold text-foreground mb-2">Sign up to explore ventures</h3>
+                    <p className="text-sm text-muted-foreground mb-5">
+                      Create a free account to browse startups, filter by industry, and connect with founders across Africa.
+                    </p>
+                    <div className="flex gap-3 justify-center">
+                      <Button asChild>
+                        <Link to="/register">Create Account</Link>
+                      </Button>
+                      <Button variant="outline" asChild>
+                        <Link to="/login">Log In</Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {viewMode === "list" ? (
                 <div className="border border-border rounded-lg overflow-hidden bg-card">
