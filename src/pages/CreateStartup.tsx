@@ -1,0 +1,299 @@
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Navigate, useNavigate } from "react-router-dom";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Upload, FileCheck, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
+import type { Database } from "@/integrations/supabase/types";
+
+type FundingStage = Database["public"]["Enums"]["funding_stage"];
+
+const INDUSTRIES = ["AgriTech", "FinTech", "EdTech", "HealthTech", "CleanTech", "Logistics", "E-commerce", "AI/ML", "PropTech", "InsurTech", "Other"];
+
+export default function CreateStartup() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [pitchDeck, setPitchDeck] = useState<File | null>(null);
+  const [logo, setLogo] = useState<File | null>(null);
+
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    problem_statement: "",
+    solution: "",
+    target_market: "",
+    business_model: "",
+    industry: "",
+    funding_stage: "" as FundingStage | "",
+    funding_requested: "",
+    website: "",
+    demo_video_url: "",
+    is_university_project: false,
+    university_name: "",
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/login" replace />;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim()) {
+      toast({ title: "Name required", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+
+    try {
+      let logo_url: string | null = null;
+      let pitch_deck_url: string | null = null;
+
+      // Upload logo
+      if (logo) {
+        const ext = logo.name.split(".").pop();
+        const path = `${user.id}/${Date.now()}-logo.${ext}`;
+        const { error } = await supabase.storage.from("startup-media").upload(path, logo);
+        if (!error) {
+          const { data } = supabase.storage.from("startup-media").getPublicUrl(path);
+          logo_url = data.publicUrl;
+        }
+      }
+
+      // Upload pitch deck
+      if (pitchDeck) {
+        const ext = pitchDeck.name.split(".").pop();
+        const path = `${user.id}/${Date.now()}-pitch.${ext}`;
+        const { error } = await supabase.storage.from("pitch-decks").upload(path, pitchDeck);
+        if (!error) {
+          pitch_deck_url = path;
+        }
+      }
+
+      const { error } = await supabase.from("startups").insert({
+        founder_id: user.id,
+        name: form.name,
+        description: form.description || null,
+        problem_statement: form.problem_statement || null,
+        solution: form.solution || null,
+        target_market: form.target_market || null,
+        business_model: form.business_model || null,
+        industry: form.industry || null,
+        funding_stage: (form.funding_stage as FundingStage) || null,
+        funding_requested: form.funding_requested ? Number(form.funding_requested) : null,
+        website: form.website || null,
+        demo_video_url: form.demo_video_url || null,
+        is_university_project: form.is_university_project,
+        university_name: form.is_university_project ? form.university_name : null,
+        logo_url,
+        pitch_deck_url,
+        is_published: false,
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Startup created!", description: "You can publish it when ready." });
+      navigate("/dashboard");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const update = (key: string, value: any) => setForm({ ...form, [key]: value });
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Navbar />
+      <main className="flex-1">
+        <div className="border-b border-border bg-muted/30">
+          <div className="container py-6">
+            <Link to="/dashboard" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3">
+              <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+            </Link>
+            <h1 className="font-display text-2xl font-bold text-foreground">Create Startup</h1>
+            <p className="text-sm text-muted-foreground mt-1">Add your venture to get discovered by investors and mentors</p>
+          </div>
+        </div>
+
+        <div className="container py-6">
+          <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+            {/* Basic Info */}
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="font-display font-semibold text-foreground mb-4">Basic Information</h2>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Startup Name *</Label>
+                  <Input id="name" value={form.name} onChange={(e) => update("name", e.target.value)} required className="mt-1.5" />
+                </div>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea id="description" value={form.description} onChange={(e) => update("description", e.target.value)} placeholder="What does your startup do?" className="mt-1.5" rows={3} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Industry</Label>
+                    <Select value={form.industry} onValueChange={(v) => update("industry", v)}>
+                      <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select industry" /></SelectTrigger>
+                      <SelectContent>
+                        {INDUSTRIES.map((ind) => <SelectItem key={ind} value={ind}>{ind}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Website</Label>
+                    <Input value={form.website} onChange={(e) => update("website", e.target.value)} placeholder="https://..." className="mt-1.5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Problem & Solution */}
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="font-display font-semibold text-foreground mb-4">Problem & Solution</h2>
+              <div className="space-y-4">
+                <div>
+                  <Label>Problem Statement</Label>
+                  <Textarea value={form.problem_statement} onChange={(e) => update("problem_statement", e.target.value)} placeholder="What problem are you solving?" className="mt-1.5" rows={3} />
+                </div>
+                <div>
+                  <Label>Solution</Label>
+                  <Textarea value={form.solution} onChange={(e) => update("solution", e.target.value)} placeholder="How are you solving it?" className="mt-1.5" rows={3} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Target Market</Label>
+                    <Input value={form.target_market} onChange={(e) => update("target_market", e.target.value)} className="mt-1.5" />
+                  </div>
+                  <div>
+                    <Label>Business Model</Label>
+                    <Input value={form.business_model} onChange={(e) => update("business_model", e.target.value)} placeholder="SaaS, Marketplace, etc." className="mt-1.5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Funding */}
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="font-display font-semibold text-foreground mb-4">Funding</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Funding Stage</Label>
+                  <Select value={form.funding_stage} onValueChange={(v) => update("funding_stage", v)}>
+                    <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select stage" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pre_seed">Pre-Seed</SelectItem>
+                      <SelectItem value="seed">Seed</SelectItem>
+                      <SelectItem value="series_a">Series A</SelectItem>
+                      <SelectItem value="series_b_plus">Series B+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Funding Requested ($)</Label>
+                  <Input type="number" value={form.funding_requested} onChange={(e) => update("funding_requested", e.target.value)} placeholder="50000" className="mt-1.5" />
+                </div>
+              </div>
+            </div>
+
+            {/* Files */}
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="font-display font-semibold text-foreground mb-4">Media & Documents</h2>
+              <div className="space-y-4">
+                {/* Logo */}
+                <div>
+                  <Label>Logo</Label>
+                  <div className="mt-1.5">
+                    {logo ? (
+                      <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
+                        <FileCheck className="h-5 w-5 text-primary shrink-0" />
+                        <span className="text-sm truncate flex-1">{logo.name}</span>
+                        <Button variant="ghost" size="sm" onClick={() => setLogo(null)} className="text-xs">Remove</Button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-border hover:border-primary/40 cursor-pointer transition-colors">
+                        <Upload className="h-6 w-6 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Upload logo (PNG, JPG)</span>
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) setLogo(f); }} />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pitch Deck */}
+                <div>
+                  <Label>Pitch Deck</Label>
+                  <div className="mt-1.5">
+                    {pitchDeck ? (
+                      <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
+                        <FileCheck className="h-5 w-5 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{pitchDeck.name}</p>
+                          <p className="text-xs text-muted-foreground">{(pitchDeck.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => setPitchDeck(null)} className="text-xs">Remove</Button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-border hover:border-primary/40 cursor-pointer transition-colors">
+                        <Upload className="h-6 w-6 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Upload pitch deck (PDF, max 10MB)</span>
+                        <input type="file" className="hidden" accept=".pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) setPitchDeck(f); }} />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                {/* Demo video */}
+                <div>
+                  <Label>Demo Video URL</Label>
+                  <Input value={form.demo_video_url} onChange={(e) => update("demo_video_url", e.target.value)} placeholder="https://youtube.com/..." className="mt-1.5" />
+                </div>
+              </div>
+            </div>
+
+            {/* University */}
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="font-display font-semibold text-foreground mb-4">University Affiliation</h2>
+              <label className="flex items-center gap-2 mb-4 cursor-pointer">
+                <Checkbox checked={form.is_university_project} onCheckedChange={(v) => update("is_university_project", v === true)} />
+                <span className="text-sm text-foreground">This is a university project</span>
+              </label>
+              {form.is_university_project && (
+                <div>
+                  <Label>University Name</Label>
+                  <Input value={form.university_name} onChange={(e) => update("university_name", e.target.value)} className="mt-1.5" />
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <Button type="submit" disabled={saving} className="gap-2">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {saving ? "Creating..." : "Create Startup"}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => navigate("/dashboard")}>Cancel</Button>
+            </div>
+          </form>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
