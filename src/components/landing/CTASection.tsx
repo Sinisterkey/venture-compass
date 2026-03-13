@@ -1,60 +1,31 @@
 import { Link } from "react-router-dom";
-import { Rocket, LineChart, BookOpen } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const roles = [
-  {
-    icon: Rocket,
-    title: "For Founders",
-    description: "Showcase your startup, get AI-powered pitch feedback, and connect with investors ready to fund your vision.",
-    cta: "Join as Founder",
-    path: "/register",
-  },
-  {
-    icon: LineChart,
-    title: "For Investors",
-    description: "Discover vetted deal flow, manage your pipeline, and invest in Africa's most promising startups.",
-    cta: "Join as Investor",
-    path: "/register",
-  },
-  {
-    icon: BookOpen,
-    title: "For Mentors",
-    description: "Guide the next generation of African entrepreneurs with your expertise and expand your network.",
-    cta: "Join as Mentor",
-    path: "/register",
-  },
-];
 
 export function CTASection() {
   return (
-    <section className="py-20 bg-secondary text-secondary-foreground">
-      <div className="container">
-        <div className="text-center mb-12">
-          <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
-            Join the ecosystem
-          </h2>
-          <p className="text-secondary-foreground/70 max-w-xl mx-auto">
-            Whether you're building, investing, or mentoring — there's a place for you on LaunchPad Africa
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {roles.map((role) => (
-            <div
-              key={role.title}
-              className="p-8 rounded-xl border border-secondary-foreground/10 bg-secondary-foreground/5 hover:bg-secondary-foreground/10 transition-colors group"
-            >
-              <role.icon className="h-10 w-10 text-primary mb-5" />
-              <h3 className="font-display text-xl font-semibold mb-3">{role.title}</h3>
-              <p className="text-sm text-secondary-foreground/60 leading-relaxed mb-6">
-                {role.description}
-              </p>
-              <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground" asChild>
-                <Link to={role.path}>{role.cta}</Link>
-              </Button>
-            </div>
-          ))}
+    <section className="py-16 bg-primary">
+      <div className="container text-center">
+        <h2 className="font-display text-2xl md:text-3xl font-bold text-primary-foreground mb-3">
+          Start your LaunchPad Africa journey
+        </h2>
+        <p className="text-primary-foreground/70 max-w-lg mx-auto mb-8">
+          Join the fastest growing community of student founders, investors, and mentors driving impact across the continent.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button size="lg" variant="secondary" className="text-base px-8 h-12" asChild>
+            <Link to="/register">
+              Create an account <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="text-base px-8 h-12 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+            asChild
+          >
+            <Link to="/discover">Browse ventures</Link>
+          </Button>
         </div>
       </div>
     </section>
