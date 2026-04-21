@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { safeErrorMessage } from "@/lib/errors";
 import {
   Shield, Users, Rocket, GraduationCap, CheckCircle, XCircle,
   Clock, Eye, Loader2, AlertTriangle, FileText,
@@ -28,12 +29,27 @@ export default function Admin() {
   const [dataLoading, setDataLoading] = useState(true);
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState<string | null>(null);
+  const [serverAdmin, setServerAdmin] = useState<boolean | null>(null);
 
   const isAdmin = roles.includes("admin");
 
+  // Server-verified admin check — prevents bypass via client state manipulation.
   useEffect(() => {
-    if (isAdmin) loadData();
-  }, [isAdmin, activeTab]);
+    if (!user) { setServerAdmin(false); return; }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.rpc("has_role", {
+        _user_id: user.id,
+        _role: "admin",
+      });
+      if (!cancelled) setServerAdmin(!error && data === true);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  useEffect(() => {
+    if (serverAdmin) loadData();
+  }, [serverAdmin, activeTab]);
 
   const loadData = async () => {
     setDataLoading(true);
@@ -62,7 +78,7 @@ export default function Admin() {
       .eq("id", id);
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: safeErrorMessage(error), variant: "destructive" });
     } else {
       toast({ title: `Verification ${status}` });
       loadData();
@@ -74,7 +90,7 @@ export default function Admin() {
     setProcessing(id);
     const { error } = await supabase.from("startups").update({ is_published: !currentStatus }).eq("id", id);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: safeErrorMessage(error), variant: "destructive" });
     } else {
       toast({ title: currentStatus ? "Startup unpublished" : "Startup published" });
       loadData();
@@ -82,7 +98,7 @@ export default function Admin() {
     setProcessing(null);
   };
 
-  if (loading) {
+  if (loading || serverAdmin === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -91,7 +107,7 @@ export default function Admin() {
   }
 
   if (!user) return <Navigate to="/login" replace />;
-  if (!isAdmin) {
+  if (!isAdmin || !serverAdmin) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />

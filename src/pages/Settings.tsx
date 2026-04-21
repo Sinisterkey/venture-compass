@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { safeErrorMessage } from "@/lib/errors";
 import { User, Shield, Camera, Save, Loader2 } from "lucide-react";
 
 export default function Settings() {
@@ -66,7 +67,7 @@ export default function Settings() {
       .eq("user_id", user.id);
 
     if (error) {
-      toast({ title: "Error saving profile", description: error.message, variant: "destructive" });
+      toast({ title: "Error saving profile", description: safeErrorMessage(error), variant: "destructive" });
     } else {
       toast({ title: "Profile updated successfully" });
     }
@@ -85,7 +86,7 @@ export default function Settings() {
     const path = `${user.id}/avatar.${ext}`;
     const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
     if (uploadError) {
-      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      toast({ title: "Upload failed", description: safeErrorMessage(uploadError), variant: "destructive" });
       setUploading(false);
       return;
     }
@@ -108,7 +109,7 @@ export default function Settings() {
     setSaving(true);
     const { error } = await supabase.auth.updateUser({ password: passwordForm.newPassword });
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: safeErrorMessage(error), variant: "destructive" });
     } else {
       toast({ title: "Password updated" });
       setPasswordForm({ newPassword: "", confirmPassword: "" });

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { safeErrorMessage } from "@/lib/errors";
 import { Loader2, Upload, FileCheck, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
@@ -111,7 +112,7 @@ export default function CreateStartup() {
       toast({ title: "Startup created!", description: "You can publish it when ready." });
       navigate("/dashboard");
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Error", description: safeErrorMessage(err), variant: "destructive" });
     } finally {
       setSaving(false);
     }
