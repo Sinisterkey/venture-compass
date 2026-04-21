@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Rocket, Compass, Users, Sparkles, X, ArrowRight, ArrowLeft, Check } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,6 +60,10 @@ export function OnboardingTour() {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) finish(); }}>
       <DialogContent className="sm:max-w-lg p-0 overflow-hidden gap-0">
+        <VisuallyHidden>
+          <DialogTitle>{current.title}</DialogTitle>
+          <DialogDescription>{current.body}</DialogDescription>
+        </VisuallyHidden>
         <button
           onClick={finish}
           aria-label="Close"
