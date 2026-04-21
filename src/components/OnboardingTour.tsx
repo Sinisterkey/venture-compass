@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Rocket, Compass, Users, Sparkles, X, ArrowRight, ArrowLeft, Check } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/contexts/AuthContext";
 
 const STORAGE_KEY = "launchpad_onboarding_seen_v1";
 
@@ -31,17 +32,19 @@ const steps = [
 ];
 
 export function OnboardingTour() {
+  const { user, loading } = useAuth();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || loading) return;
+    if (user) return; // skip for logged-in users
     const seen = window.localStorage.getItem(STORAGE_KEY);
     if (!seen) {
       const t = setTimeout(() => setOpen(true), 800);
       return () => clearTimeout(t);
     }
-  }, []);
+  }, [loading, user]);
 
   const finish = () => {
     window.localStorage.setItem(STORAGE_KEY, "1");
@@ -56,6 +59,8 @@ export function OnboardingTour() {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) finish(); }}>
       <DialogContent className="sm:max-w-lg p-0 overflow-hidden gap-0">
+        <DialogTitle className="sr-only">{current.title}</DialogTitle>
+        <DialogDescription className="sr-only">{current.body}</DialogDescription>
         <button
           onClick={finish}
           aria-label="Close"

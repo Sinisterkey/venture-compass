@@ -1,9 +1,13 @@
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import heroBg from "@/assets/hero-bg.jpg";
 
 export function HeroSection() {
+  const { user, loading } = useAuth();
+  const isLoggedIn = !loading && !!user;
+
   return (
     <section className="relative min-h-[600px] flex items-center">
       {/* Background image */}
@@ -23,21 +27,31 @@ export function HeroSection() {
             LaunchPad Africa connects university student founders to the mentorship, network, and funding to build the next success story.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button size="lg" className="text-base px-8 h-12" asChild>
-              <Link to="/register">
-                Create an account <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-base px-8 h-12 bg-transparent border-secondary-foreground/30 text-secondary-foreground hover:bg-secondary-foreground/10 hover:text-secondary-foreground"
-              asChild
-            >
-              <Link to="/discover">Explore ventures</Link>
-            </Button>
-          </div>
+          {!loading && (
+            <div className="flex flex-col sm:flex-row gap-3">
+              {isLoggedIn ? (
+                <Button size="lg" className="text-base px-8 h-12" asChild>
+                  <Link to="/dashboard">
+                    <LayoutDashboard className="mr-2 h-4 w-4" /> Go to dashboard
+                  </Link>
+                </Button>
+              ) : (
+                <Button size="lg" className="text-base px-8 h-12" asChild>
+                  <Link to="/register">
+                    Create an account <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-base px-8 h-12 bg-transparent border-secondary-foreground/30 text-secondary-foreground hover:bg-secondary-foreground/10 hover:text-secondary-foreground"
+                asChild
+              >
+                <Link to="/discover">Explore ventures</Link>
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Role cards — VC4A style */}
