@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { safeErrorMessage } from "@/lib/errors";
 import {
   Eye, Users, TrendingUp, Rocket, Sparkles, ArrowRight, RefreshCw,
   Plus, Settings, GraduationCap, FileText,
@@ -64,7 +65,7 @@ export default function Dashboard() {
   const publishStartup = async (id: string) => {
     const { error } = await supabase.from("startups").update({ is_published: true }).eq("id", id);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: safeErrorMessage(error), variant: "destructive" });
     } else {
       toast({ title: "Startup published!" });
       fetchStartups();
