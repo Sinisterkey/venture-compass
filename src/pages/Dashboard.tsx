@@ -33,8 +33,10 @@ export default function Dashboard() {
 
   const primaryRole = roles[0] || "founder";
 
+  const canMatch = primaryRole === "founder" || primaryRole === "investor";
+
   const fetchMatches = async () => {
-    if (!user) return;
+    if (!user || !canMatch) return;
     setMatchLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-match", {
