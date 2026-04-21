@@ -59,10 +59,8 @@ export function OnboardingTour() {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) finish(); }}>
       <DialogContent className="sm:max-w-lg p-0 overflow-hidden gap-0">
-        <VisuallyHidden>
-          <DialogTitle>{current.title}</DialogTitle>
-          <DialogDescription>{current.body}</DialogDescription>
-        </VisuallyHidden>
+        <DialogTitle className="sr-only">{current.title}</DialogTitle>
+        <DialogDescription className="sr-only">{current.body}</DialogDescription>
         <button
           onClick={finish}
           aria-label="Close"
