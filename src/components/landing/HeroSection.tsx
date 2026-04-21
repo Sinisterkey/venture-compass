@@ -5,7 +5,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import heroBg from "@/assets/hero-bg.jpg";
 
 export function HeroSection() {
-  return (
+  const { user, loading } = useAuth();
+  const isLoggedIn = !loading && !!user;
+
+
     <section className="relative min-h-[600px] flex items-center">
       {/* Background image */}
       <div className="absolute inset-0">
