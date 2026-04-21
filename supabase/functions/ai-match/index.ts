@@ -10,44 +10,97 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { user_id, role } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    // 1. Require Authorization header (JWT)
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    // 2. Verify the caller and derive identity from the JWT (NOT from the body)
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = claimsData.claims.sub as string;
+
+    // 3. Validate request body — only accept `role`, ignore any client-supplied user_id
+    let body: { role?: string } = {};
+    try {
+      body = await req.json();
+    } catch {
+      // empty body is acceptable; role validated below
+    }
+    const role = body.role;
+    if (role !== "founder" && role !== "investor") {
+      return new Response(JSON.stringify({ error: "Invalid role. Must be 'founder' or 'investor'." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 4. Verify the caller actually holds the requested role server-side
+    const { data: rolesData, error: rolesError } = await userClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    if (rolesError) {
+      console.error("role lookup error:", rolesError);
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userRoles = (rolesData ?? []).map((r: { role: string }) => r.role);
+    if (!userRoles.includes(role)) {
+      return new Response(JSON.stringify({ error: "Forbidden: role mismatch" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 5. All data queries use the user-scoped client so RLS applies
     let prompt = "";
     let context = "";
 
     if (role === "founder") {
-      // Get founder's startup info
-      const { data: startups } = await supabase
+      const { data: startups } = await userClient
         .from("startups")
         .select("*")
-        .eq("founder_id", user_id);
+        .eq("founder_id", userId);
 
-      // Get all investors and mentors
       const [{ data: investors }, { data: mentors }] = await Promise.all([
-        supabase.from("investor_profiles").select("*, profiles!inner(full_name, bio, country)"),
-        supabase.from("mentor_profiles").select("*, profiles!inner(full_name, bio, country)"),
+        userClient.from("investor_profiles").select("*, profiles!inner(full_name, bio, country)"),
+        userClient.from("mentor_profiles").select("*, profiles!inner(full_name, bio, country)"),
       ]);
 
       context = JSON.stringify({ startups, investors, mentors });
       prompt = `You are an AI matching engine for LaunchPad Africa. Given the founder's startup(s) and available investors/mentors, recommend the top 3 most relevant investors and top 3 most relevant mentors. Match based on industry alignment, funding stage preferences, expertise overlap, and geographic proximity. Return JSON with format: { "investors": [{ "user_id": string, "name": string, "reason": string, "match_score": number }], "mentors": [{ "user_id": string, "name": string, "reason": string, "match_score": number }] }. If no startups exist, return empty arrays with a message suggesting the founder create a startup profile first.`;
-
-    } else if (role === "investor") {
-      // Get investor preferences
-      const { data: investorProfile } = await supabase
+    } else {
+      const { data: investorProfile } = await userClient
         .from("investor_profiles")
         .select("*")
-        .eq("user_id", user_id)
-        .single();
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      // Get published startups
-      const { data: startups } = await supabase
+      const { data: startups } = await userClient
         .from("startups")
         .select("*, profiles!inner(full_name, country)")
         .eq("is_published", true);
@@ -159,7 +212,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("match error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
