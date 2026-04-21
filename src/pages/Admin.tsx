@@ -141,12 +141,32 @@ export default function Admin() {
       <Navbar />
       <main className="flex-1">
         <div className="border-b border-border bg-muted/30">
-          <div className="container py-6">
-            <div className="flex items-center gap-2 mb-1">
-              <Shield className="h-5 w-5 text-primary" />
-              <h1 className="font-display text-2xl font-bold text-foreground">Admin Dashboard</h1>
+          <div className="container py-6 flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Shield className="h-5 w-5 text-primary" />
+                <h1 className="font-display text-2xl font-bold text-foreground">Admin Dashboard</h1>
+              </div>
+              <p className="text-sm text-muted-foreground">Manage verifications, startups, and users</p>
             </div>
-            <p className="text-sm text-muted-foreground">Manage verifications, startups, and users</p>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={processing === "seed"}
+              onClick={async () => {
+                setProcessing("seed");
+                const { data, error } = await supabase.functions.invoke("seed-demo-accounts");
+                setProcessing(null);
+                if (error) {
+                  toast({ title: "Seeding failed", description: safeErrorMessage(error), variant: "destructive" });
+                } else {
+                  toast({ title: "Demo accounts ready", description: `Processed ${data?.results?.length ?? 0} accounts.` });
+                }
+              }}
+            >
+              {processing === "seed" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Seed demo accounts
+            </Button>
           </div>
         </div>
 

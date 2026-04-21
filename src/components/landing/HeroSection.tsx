@@ -13,7 +13,7 @@ export function HeroSection() {
       </div>
 
       <div className="container relative z-10 py-20 md:py-28">
-        <div className="max-w-2xl">
+        <div className="max-w-2xl animate-fade-in">
           <h1 className="font-display text-4xl md:text-5xl lg:text-[3.5rem] font-bold leading-[1.1] tracking-tight text-secondary-foreground mb-5">
             Fueling Africa's next generation of{" "}
             <span className="text-primary">innovators</span>
@@ -32,7 +32,7 @@ export function HeroSection() {
             <Button
               size="lg"
               variant="outline"
-              className="text-base px-8 h-12 border-secondary-foreground/20 text-secondary-foreground hover:bg-secondary-foreground/10"
+              className="text-base px-8 h-12 bg-transparent border-secondary-foreground/30 text-secondary-foreground hover:bg-secondary-foreground/10 hover:text-secondary-foreground"
               asChild
             >
               <Link to="/discover">Explore ventures</Link>
@@ -41,7 +41,7 @@ export function HeroSection() {
         </div>
 
         {/* Role cards — VC4A style */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-16 animate-fade-in" style={{ animationDelay: "150ms", animationFillMode: "backwards" }}>
           {[
             {
               title: "For Student Founders",
