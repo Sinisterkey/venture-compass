@@ -318,6 +318,7 @@ export type Database = {
       }
     }
     Functions: {
+      can_view_pitch_deck: { Args: { _object_name: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
