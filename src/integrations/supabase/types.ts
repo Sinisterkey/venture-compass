@@ -316,6 +316,25 @@ export type Database = {
         }
         Relationships: []
       }
+      published_startups: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string | null
+          demo_video_url: string | null
+          description: string | null
+          founder_name: string | null
+          funding_stage: Database["public"]["Enums"]["funding_stage"] | null
+          id: string | null
+          industry: string | null
+          is_university_project: boolean | null
+          logo_url: string | null
+          name: string | null
+          university_name: string | null
+          website: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_view_pitch_deck: { Args: { _object_name: string }; Returns: boolean }
