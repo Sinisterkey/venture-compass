@@ -37,7 +37,7 @@ export default function Dashboard() {
     setMatchLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-match", {
-        body: { user_id: user.id, role: primaryRole },
+        body: { role: primaryRole },
       });
       if (error) throw error;
       setMatches(data);
