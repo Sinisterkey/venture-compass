@@ -37,7 +37,8 @@ export function OnboardingTour() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const seen = window.localStorage.getItem(STORAGE_KEY);
-    if (!seen) {
+    // Don't show the tour to logged-in users.
+    if (!seen && !document.cookie.includes("sb-")) {
       const t = setTimeout(() => setOpen(true), 800);
       return () => clearTimeout(t);
     }
