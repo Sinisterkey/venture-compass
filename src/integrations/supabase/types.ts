@@ -137,6 +137,93 @@ export type Database = {
         }
         Relationships: []
       }
+      showcase_investors: {
+        Row: {
+          country: string | null
+          created_at: string
+          focus: string
+          id: string
+          initials: string
+          investor_type: string
+          name: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          focus: string
+          id?: string
+          initials: string
+          investor_type: string
+          name: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          focus?: string
+          id?: string
+          initials?: string
+          investor_type?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      showcase_ventures: {
+        Row: {
+          business_model: string | null
+          country: string
+          created_at: string
+          description: string
+          funding_requested: number | null
+          id: string
+          industry: string
+          location: string
+          logo_url: string | null
+          name: string
+          problem_statement: string | null
+          solution: string | null
+          stage: string
+          target_market: string | null
+          university: string | null
+          website: string | null
+        }
+        Insert: {
+          business_model?: string | null
+          country: string
+          created_at?: string
+          description: string
+          funding_requested?: number | null
+          id?: string
+          industry: string
+          location: string
+          logo_url?: string | null
+          name: string
+          problem_statement?: string | null
+          solution?: string | null
+          stage: string
+          target_market?: string | null
+          university?: string | null
+          website?: string | null
+        }
+        Update: {
+          business_model?: string | null
+          country?: string
+          created_at?: string
+          description?: string
+          funding_requested?: number | null
+          id?: string
+          industry?: string
+          location?: string
+          logo_url?: string | null
+          name?: string
+          problem_statement?: string | null
+          solution?: string | null
+          stage?: string
+          target_market?: string | null
+          university?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       startups: {
         Row: {
           business_model: string | null

@@ -1,18 +1,37 @@
+import { useEffect, useState } from "react";
 import { ArrowRight, MapPin, GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
 
-const MOCK_STARTUPS = [
-  { id: "1", name: "AgriFlow", industry: "AgriTech", location: "Lusaka, Zambia", stage: "Seed", university: "UNZA", description: "Smart irrigation systems powered by IoT sensors for smallholder farmers." },
-  { id: "2", name: "PaySwift", industry: "FinTech", location: "Lagos, Nigeria", stage: "Series A", university: null, description: "Cross-border payment infrastructure enabling instant transactions." },
-  { id: "3", name: "EduBridge", industry: "EdTech", location: "Nairobi, Kenya", stage: "Pre-Seed", university: "UoN", description: "AI-powered adaptive learning tailored to African curriculums." },
-  { id: "4", name: "SolarGrid", industry: "CleanTech", location: "Accra, Ghana", stage: "Seed", university: "Ashesi", description: "Decentralized solar energy marketplace for rural communities." },
-  { id: "5", name: "HealthLink", industry: "HealthTech", location: "Kigali, Rwanda", stage: "Series A", university: null, description: "Telemedicine connecting remote patients with specialist doctors." },
-  { id: "6", name: "LogiTrack", industry: "Logistics", location: "Dar es Salaam, Tanzania", stage: "Pre-Seed", university: "UDSM", description: "Last-mile delivery optimization using AI route planning." },
-];
+interface Venture {
+  id: string;
+  name: string;
+  industry: string;
+  location: string;
+  stage: string;
+  university: string | null;
+  description: string;
+}
 
 export function FeaturedStartups() {
+  const [startups, setStartups] = useState<Venture[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("showcase_ventures")
+        .select("id, name, industry, location, stage, university, description")
+        .order("created_at", { ascending: true })
+        .limit(6);
+      setStartups((data as Venture[]) ?? []);
+      setLoading(false);
+    })();
+  }, []);
+
   return (
     <section className="py-16 bg-background">
       <div className="container">
@@ -28,9 +47,7 @@ export function FeaturedStartups() {
           </Button>
         </div>
 
-        {/* Table-style list */}
         <div className="border border-border rounded-lg overflow-hidden bg-card">
-          {/* Header */}
           <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-muted/60 text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-border">
             <div className="col-span-4">Venture</div>
             <div className="col-span-2">Industry</div>
@@ -39,37 +56,45 @@ export function FeaturedStartups() {
             <div className="col-span-2">Status</div>
           </div>
 
-          {MOCK_STARTUPS.map((startup, i) => (
-            <div
-              key={startup.id}
-              className={`grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-4 hover:bg-muted/30 transition-colors cursor-pointer ${
-                i < MOCK_STARTUPS.length - 1 ? "border-b border-border" : ""
-              }`}
-            >
-              <div className="col-span-4">
-                <p className="font-medium text-sm text-foreground">{startup.name}</p>
-                <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{startup.description}</p>
-              </div>
-              <div className="col-span-2 flex items-center">
-                <Badge variant="secondary" className="text-xs font-normal">{startup.industry}</Badge>
-              </div>
-              <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground">
-                <MapPin className="h-3 w-3 shrink-0" />{startup.location}
-              </div>
-              <div className="col-span-2 flex items-center">
-                <span className="text-xs text-muted-foreground">{startup.stage}</span>
-              </div>
-              <div className="col-span-2 flex items-center">
-                {startup.university ? (
-                  <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary">
-                    <GraduationCap className="h-3 w-3" /> {startup.university}
-                  </Badge>
-                ) : (
-                  <span className="text-xs text-muted-foreground">Independent</span>
-                )}
-              </div>
-            </div>
-          ))}
+          {loading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="px-5 py-4 border-b border-border last:border-0">
+                  <Skeleton className="h-5 w-1/2 mb-2" />
+                  <Skeleton className="h-3 w-3/4" />
+                </div>
+              ))
+            : startups.map((startup, i) => (
+                <Link
+                  to={`/ventures/${startup.id}`}
+                  key={startup.id}
+                  className={`grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-4 hover:bg-muted/30 transition-colors ${
+                    i < startups.length - 1 ? "border-b border-border" : ""
+                  }`}
+                >
+                  <div className="col-span-4">
+                    <p className="font-medium text-sm text-foreground">{startup.name}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{startup.description}</p>
+                  </div>
+                  <div className="col-span-2 flex items-center">
+                    <Badge variant="secondary" className="text-xs font-normal">{startup.industry}</Badge>
+                  </div>
+                  <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3 shrink-0" />{startup.location}
+                  </div>
+                  <div className="col-span-2 flex items-center">
+                    <span className="text-xs text-muted-foreground">{startup.stage}</span>
+                  </div>
+                  <div className="col-span-2 flex items-center">
+                    {startup.university ? (
+                      <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary">
+                        <GraduationCap className="h-3 w-3" /> {startup.university}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Independent</span>
+                    )}
+                  </div>
+                </Link>
+              ))}
         </div>
 
         <div className="mt-4 md:hidden">

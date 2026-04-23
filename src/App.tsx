@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import CreateStartup from "./pages/CreateStartup";
 import Admin from "./pages/Admin";
+import VentureDetail from "./pages/VentureDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/create-startup" element={<CreateStartup />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/ventures/:id" element={<VentureDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

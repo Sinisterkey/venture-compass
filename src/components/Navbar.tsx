@@ -4,7 +4,7 @@ import { Menu, X, Rocket, LogOut, Settings, Shield, LayoutDashboard } from "luci
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
-const publicLinks = [
+const baseLinks = [
   { label: "Home", path: "/" },
   { label: "Discover", path: "/discover" },
   { label: "About", path: "/about" },
@@ -17,6 +17,8 @@ export function Navbar() {
 
   const isAdmin = roles.includes("admin");
   const isLoggedIn = !!user;
+  // Hide "About" once a user is signed in — it's only relevant to visitors.
+  const publicLinks = isLoggedIn ? baseLinks.filter((l) => l.path !== "/about") : baseLinks;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

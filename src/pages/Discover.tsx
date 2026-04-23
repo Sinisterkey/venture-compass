@@ -1,29 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, SlidersHorizontal, MapPin, GraduationCap, X, List, LayoutGrid, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const INDUSTRIES = ["AgriTech", "FinTech", "EdTech", "HealthTech", "CleanTech", "Logistics", "E-commerce", "AI/ML"];
 const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B+"];
 const COUNTRIES = ["Zambia", "Nigeria", "Kenya", "Ghana", "Rwanda", "Tanzania", "South Africa", "Uganda"];
 
-const ALL_STARTUPS = [
-  { id: "1", name: "AgriFlow", industry: "AgriTech", location: "Lusaka, Zambia", country: "Zambia", stage: "Seed", university: "UNZA", description: "Smart irrigation systems powered by IoT sensors for smallholder farmers across sub-Saharan Africa." },
-  { id: "2", name: "PaySwift", industry: "FinTech", location: "Lagos, Nigeria", country: "Nigeria", stage: "Series A", university: null, description: "Cross-border payment infrastructure enabling instant, low-cost transactions between African countries." },
-  { id: "3", name: "EduBridge", industry: "EdTech", location: "Nairobi, Kenya", country: "Kenya", stage: "Pre-Seed", university: "UoN", description: "AI-powered adaptive learning platform tailored to African curriculum standards and local languages." },
-  { id: "4", name: "SolarGrid", industry: "CleanTech", location: "Accra, Ghana", country: "Ghana", stage: "Seed", university: "Ashesi", description: "Decentralized solar energy marketplace connecting rural communities with affordable clean power." },
-  { id: "5", name: "HealthLink", industry: "HealthTech", location: "Kigali, Rwanda", country: "Rwanda", stage: "Series A", university: null, description: "Telemedicine platform connecting patients in remote areas with specialist doctors across the continent." },
-  { id: "6", name: "LogiTrack", industry: "Logistics", location: "Dar es Salaam, Tanzania", country: "Tanzania", stage: "Pre-Seed", university: "UDSM", description: "Last-mile delivery optimization using AI route planning for e-commerce across East Africa." },
-  { id: "7", name: "FarmConnect", industry: "AgriTech", location: "Kampala, Uganda", country: "Uganda", stage: "Seed", university: null, description: "B2B marketplace connecting smallholder farmers directly with retailers, eliminating middlemen." },
-  { id: "8", name: "MediTrack", industry: "HealthTech", location: "Cape Town, South Africa", country: "South Africa", stage: "Series A", university: "UCT", description: "Blockchain-based pharmaceutical supply chain tracking to combat counterfeit medicines." },
-  { id: "9", name: "LearnAfrica", industry: "EdTech", location: "Lusaka, Zambia", country: "Zambia", stage: "Pre-Seed", university: "UNZA", description: "Offline-first mobile learning app with downloadable content for areas with limited connectivity." },
-];
+interface Venture {
+  id: string;
+  name: string;
+  industry: string;
+  location: string;
+  country: string;
+  stage: string;
+  university: string | null;
+  description: string;
+}
 
 export default function Discover() {
   const { user, loading } = useAuth();
@@ -34,12 +35,25 @@ export default function Discover() {
   const [universityOnly, setUniversityOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [ventures, setVentures] = useState<Venture[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("showcase_ventures")
+        .select("id, name, industry, location, country, stage, university, description")
+        .order("name", { ascending: true });
+      setVentures((data as Venture[]) ?? []);
+      setLoadingData(false);
+    })();
+  }, []);
 
   const toggleFilter = (arr: string[], setArr: React.Dispatch<React.SetStateAction<string[]>>, val: string) => {
     setArr(arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]);
   };
 
-  const filtered = ALL_STARTUPS.filter((s) => {
+  const filtered = ventures.filter((s) => {
     if (search && !s.name.toLowerCase().includes(search.toLowerCase()) && !s.description.toLowerCase().includes(search.toLowerCase())) return false;
     if (selectedIndustries.length && !selectedIndustries.includes(s.industry)) return false;
     if (selectedStages.length && !selectedStages.includes(s.stage)) return false;
@@ -194,7 +208,13 @@ export default function Discover() {
                 </div>
               )}
 
-              {viewMode === "list" ? (
+              {loadingData ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : viewMode === "list" ? (
                 <div className="border border-border rounded-lg overflow-hidden bg-card">
                   <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-2.5 bg-muted/60 text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-border">
                     <div className="col-span-4">Venture</div>
@@ -204,7 +224,7 @@ export default function Discover() {
                     <div className="col-span-2">Status</div>
                   </div>
                   {filtered.map((s, i) => (
-                    <div key={s.id} className={`grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer ${i < filtered.length - 1 ? "border-b border-border" : ""}`}>
+                    <Link to={`/ventures/${s.id}`} key={s.id} className={`grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors ${i < filtered.length - 1 ? "border-b border-border" : ""}`}>
                       <div className="col-span-4">
                         <p className="font-medium text-sm text-foreground">{s.name}</p>
                         <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{s.description}</p>
@@ -225,13 +245,13 @@ export default function Discover() {
                           <span className="text-xs text-muted-foreground">Independent</span>
                         )}
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {filtered.map((s) => (
-                    <div key={s.id} className="p-5 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors cursor-pointer">
+                    <Link to={`/ventures/${s.id}`} key={s.id} className="block p-5 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors">
                       <div className="flex items-center justify-between mb-2">
                         <p className="font-medium text-sm text-foreground">{s.name}</p>
                         {s.university && (
@@ -248,12 +268,12 @@ export default function Discover() {
                         <span>·</span>
                         <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.country}</span>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
 
-              {filtered.length === 0 && (
+              {!loadingData && filtered.length === 0 && (
                 <div className="text-center py-16">
                   <p className="text-muted-foreground mb-2">No ventures match your filters</p>
                   <Button variant="ghost" onClick={clearAll}>Clear filters</Button>
