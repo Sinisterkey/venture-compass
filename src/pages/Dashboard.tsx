@@ -31,12 +31,15 @@ export default function Dashboard() {
   const [myStartups, setMyStartups] = useState<Startup[]>([]);
   const { toast } = useToast();
 
-  const primaryRole = roles[0] || "founder";
+  const primaryRole = roles[0] ?? null;
+  const primaryRoleLabel = primaryRole
+    ? primaryRole.charAt(0).toUpperCase() + primaryRole.slice(1)
+    : "Member";
 
   const canMatch = primaryRole === "founder" || primaryRole === "investor";
 
   const fetchMatches = async () => {
-    if (!user || !canMatch) return;
+    if (!user || !canMatch || !primaryRole) return;
     setMatchLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-match", {
@@ -59,10 +62,20 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (user && !loading) {
-      fetchMatches();
       fetchStartups();
     }
   }, [user, loading]);
+
+  useEffect(() => {
+    if (!user || loading || !primaryRole) return;
+
+    if (canMatch) {
+      fetchMatches();
+      return;
+    }
+
+    setMatches(null);
+  }, [user, loading, primaryRole, canMatch]);
 
   const publishStartup = async (id: string) => {
     const { error } = await supabase.from("startups").update({ is_published: true }).eq("id", id);
@@ -96,7 +109,7 @@ export default function Dashboard() {
                 Welcome back{profile?.full_name ? `, ${profile.full_name}` : ""}
               </h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary" className="capitalize text-xs">{primaryRole}</Badge>
+                <Badge variant="secondary" className="capitalize text-xs">{primaryRoleLabel}</Badge>
                 <span className="text-xs text-muted-foreground">{user.email}</span>
               </div>
             </div>
@@ -116,7 +129,7 @@ export default function Dashboard() {
             {[
               { icon: Rocket, label: "My Startups", value: String(myStartups.length) },
               { icon: Eye, label: "Published", value: String(myStartups.filter((s) => s.is_published).length) },
-              { icon: Users, label: "Role", value: primaryRole.charAt(0).toUpperCase() + primaryRole.slice(1) },
+              { icon: Users, label: "Role", value: primaryRoleLabel },
               { icon: TrendingUp, label: "Matches", value: String((matches?.investors?.length || 0) + (matches?.mentors?.length || 0) + (matches?.startups?.length || 0)) },
             ].map((stat) => (
               <div key={stat.label} className="p-4 rounded-lg border border-border bg-card">
@@ -197,14 +210,18 @@ export default function Dashboard() {
                     <Sparkles className="h-5 w-5 text-accent" />
                     <h2 className="font-display font-semibold text-foreground">AI Recommendations</h2>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={fetchMatches} disabled={matchLoading} className="gap-1 text-xs">
+                  <Button variant="ghost" size="sm" onClick={fetchMatches} disabled={!canMatch || matchLoading} className="gap-1 text-xs">
                     <RefreshCw className={`h-3.5 w-3.5 ${matchLoading ? "animate-spin" : ""}`} />
                     Refresh
                   </Button>
                 </div>
 
                 <div className="p-5">
-                  {matchLoading && !matches ? (
+                    {!primaryRole ? (
+                      <p className="text-sm text-muted-foreground py-4">Loading your account permissions…</p>
+                    ) : !canMatch ? (
+                      <p className="text-sm text-muted-foreground py-4">AI recommendations are currently available for founder and investor accounts.</p>
+                    ) : matchLoading && !matches ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                       <span className="ml-3 text-sm text-muted-foreground">Finding matches...</span>
