@@ -208,7 +208,13 @@ export default function Discover() {
                 </div>
               )}
 
-              {viewMode === "list" ? (
+              {loadingData ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : viewMode === "list" ? (
                 <div className="border border-border rounded-lg overflow-hidden bg-card">
                   <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-2.5 bg-muted/60 text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-border">
                     <div className="col-span-4">Venture</div>
@@ -218,7 +224,7 @@ export default function Discover() {
                     <div className="col-span-2">Status</div>
                   </div>
                   {filtered.map((s, i) => (
-                    <div key={s.id} className={`grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer ${i < filtered.length - 1 ? "border-b border-border" : ""}`}>
+                    <Link to={`/ventures/${s.id}`} key={s.id} className={`grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors ${i < filtered.length - 1 ? "border-b border-border" : ""}`}>
                       <div className="col-span-4">
                         <p className="font-medium text-sm text-foreground">{s.name}</p>
                         <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{s.description}</p>
@@ -239,13 +245,13 @@ export default function Discover() {
                           <span className="text-xs text-muted-foreground">Independent</span>
                         )}
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {filtered.map((s) => (
-                    <div key={s.id} className="p-5 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors cursor-pointer">
+                    <Link to={`/ventures/${s.id}`} key={s.id} className="block p-5 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors">
                       <div className="flex items-center justify-between mb-2">
                         <p className="font-medium text-sm text-foreground">{s.name}</p>
                         {s.university && (
@@ -262,12 +268,12 @@ export default function Discover() {
                         <span>·</span>
                         <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.country}</span>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
 
-              {filtered.length === 0 && (
+              {!loadingData && filtered.length === 0 && (
                 <div className="text-center py-16">
                   <p className="text-muted-foreground mb-2">No ventures match your filters</p>
                   <Button variant="ghost" onClick={clearAll}>Clear filters</Button>
