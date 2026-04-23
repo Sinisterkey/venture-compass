@@ -35,12 +35,25 @@ export default function Discover() {
   const [universityOnly, setUniversityOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [ventures, setVentures] = useState<Venture[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("showcase_ventures")
+        .select("id, name, industry, location, country, stage, university, description")
+        .order("name", { ascending: true });
+      setVentures((data as Venture[]) ?? []);
+      setLoadingData(false);
+    })();
+  }, []);
 
   const toggleFilter = (arr: string[], setArr: React.Dispatch<React.SetStateAction<string[]>>, val: string) => {
     setArr(arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]);
   };
 
-  const filtered = ALL_STARTUPS.filter((s) => {
+  const filtered = ventures.filter((s) => {
     if (search && !s.name.toLowerCase().includes(search.toLowerCase()) && !s.description.toLowerCase().includes(search.toLowerCase())) return false;
     if (selectedIndustries.length && !selectedIndustries.includes(s.industry)) return false;
     if (selectedStages.length && !selectedStages.includes(s.stage)) return false;
