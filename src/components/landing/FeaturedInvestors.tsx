@@ -1,15 +1,32 @@
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
 
-const MOCK_INVESTORS = [
-  { name: "Venture Capital Partners", focus: "FinTech, AgriTech", type: "VC Fund", initials: "VC" },
-  { name: "Amara Osei", focus: "CleanTech, HealthTech", type: "Angel", initials: "AO" },
-  { name: "Pan-African Growth Fund", focus: "Series A, B", type: "Growth Fund", initials: "PG" },
-  { name: "Kwame Asante", focus: "EdTech, AI/ML", type: "Angel", initials: "KA" },
-  { name: "Sahara Ventures", focus: "Logistics, E-commerce", type: "VC Fund", initials: "SV" },
-  { name: "Dr. Fatima Diallo", focus: "HealthTech, BioTech", type: "Angel", initials: "FD" },
-];
+interface Investor {
+  id: string;
+  name: string;
+  focus: string;
+  investor_type: string;
+  initials: string;
+}
 
 export function FeaturedInvestors() {
+  const [investors, setInvestors] = useState<Investor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("showcase_investors")
+        .select("id, name, focus, investor_type, initials")
+        .order("created_at", { ascending: true })
+        .limit(6);
+      setInvestors((data as Investor[]) ?? []);
+      setLoading(false);
+    })();
+  }, []);
+
   return (
     <section className="py-16 bg-muted/40">
       <div className="container">
@@ -21,21 +38,25 @@ export function FeaturedInvestors() {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {MOCK_INVESTORS.map((investor) => (
-            <div
-              key={investor.name}
-              className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors"
-            >
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-secondary-foreground text-sm font-semibold shrink-0">
-                {investor.initials}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-sm text-foreground truncate">{investor.name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{investor.focus}</p>
-              </div>
-              <Badge variant="outline" className="text-xs shrink-0">{investor.type}</Badge>
-            </div>
-          ))}
+          {loading
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 rounded-lg" />
+              ))
+            : investors.map((investor) => (
+                <div
+                  key={investor.id}
+                  className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors"
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-secondary-foreground text-sm font-semibold shrink-0">
+                    {investor.initials}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm text-foreground truncate">{investor.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{investor.focus}</p>
+                  </div>
+                  <Badge variant="outline" className="text-xs shrink-0">{investor.investor_type}</Badge>
+                </div>
+              ))}
         </div>
       </div>
     </section>
