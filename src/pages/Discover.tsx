@@ -1,29 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, SlidersHorizontal, MapPin, GraduationCap, X, List, LayoutGrid, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const INDUSTRIES = ["AgriTech", "FinTech", "EdTech", "HealthTech", "CleanTech", "Logistics", "E-commerce", "AI/ML"];
 const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B+"];
 const COUNTRIES = ["Zambia", "Nigeria", "Kenya", "Ghana", "Rwanda", "Tanzania", "South Africa", "Uganda"];
 
-const ALL_STARTUPS = [
-  { id: "1", name: "AgriFlow", industry: "AgriTech", location: "Lusaka, Zambia", country: "Zambia", stage: "Seed", university: "UNZA", description: "Smart irrigation systems powered by IoT sensors for smallholder farmers across sub-Saharan Africa." },
-  { id: "2", name: "PaySwift", industry: "FinTech", location: "Lagos, Nigeria", country: "Nigeria", stage: "Series A", university: null, description: "Cross-border payment infrastructure enabling instant, low-cost transactions between African countries." },
-  { id: "3", name: "EduBridge", industry: "EdTech", location: "Nairobi, Kenya", country: "Kenya", stage: "Pre-Seed", university: "UoN", description: "AI-powered adaptive learning platform tailored to African curriculum standards and local languages." },
-  { id: "4", name: "SolarGrid", industry: "CleanTech", location: "Accra, Ghana", country: "Ghana", stage: "Seed", university: "Ashesi", description: "Decentralized solar energy marketplace connecting rural communities with affordable clean power." },
-  { id: "5", name: "HealthLink", industry: "HealthTech", location: "Kigali, Rwanda", country: "Rwanda", stage: "Series A", university: null, description: "Telemedicine platform connecting patients in remote areas with specialist doctors across the continent." },
-  { id: "6", name: "LogiTrack", industry: "Logistics", location: "Dar es Salaam, Tanzania", country: "Tanzania", stage: "Pre-Seed", university: "UDSM", description: "Last-mile delivery optimization using AI route planning for e-commerce across East Africa." },
-  { id: "7", name: "FarmConnect", industry: "AgriTech", location: "Kampala, Uganda", country: "Uganda", stage: "Seed", university: null, description: "B2B marketplace connecting smallholder farmers directly with retailers, eliminating middlemen." },
-  { id: "8", name: "MediTrack", industry: "HealthTech", location: "Cape Town, South Africa", country: "South Africa", stage: "Series A", university: "UCT", description: "Blockchain-based pharmaceutical supply chain tracking to combat counterfeit medicines." },
-  { id: "9", name: "LearnAfrica", industry: "EdTech", location: "Lusaka, Zambia", country: "Zambia", stage: "Pre-Seed", university: "UNZA", description: "Offline-first mobile learning app with downloadable content for areas with limited connectivity." },
-];
+interface Venture {
+  id: string;
+  name: string;
+  industry: string;
+  location: string;
+  country: string;
+  stage: string;
+  university: string | null;
+  description: string;
+}
 
 export default function Discover() {
   const { user, loading } = useAuth();
