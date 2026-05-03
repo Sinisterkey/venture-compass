@@ -11,8 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import { safeErrorMessage } from "@/lib/errors";
 import {
   Shield, Users, Rocket, GraduationCap, CheckCircle, XCircle,
-  Clock, Eye, Loader2, AlertTriangle, FileText,
+  Clock, Eye, Loader2, AlertTriangle, FileText, Calendar,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 
 type VerificationRequest = Database["public"]["Tables"]["verification_requests"]["Row"];
@@ -149,24 +150,29 @@ export default function Admin() {
               </div>
               <p className="text-sm text-muted-foreground">Manage verifications, startups, and users</p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={processing === "seed"}
-              onClick={async () => {
-                setProcessing("seed");
-                const { data, error } = await supabase.functions.invoke("seed-demo-accounts");
-                setProcessing(null);
-                if (error) {
-                  toast({ title: "Seeding failed", description: safeErrorMessage(error), variant: "destructive" });
-                } else {
-                  toast({ title: "Demo accounts ready", description: `Processed ${data?.results?.length ?? 0} accounts.` });
-                }
-              }}
-            >
-              {processing === "seed" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Seed demo accounts
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/admin/events" className="gap-2"><Calendar className="h-4 w-4" /> Manage Events</Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={processing === "seed"}
+                onClick={async () => {
+                  setProcessing("seed");
+                  const { data, error } = await supabase.functions.invoke("seed-demo-accounts");
+                  setProcessing(null);
+                  if (error) {
+                    toast({ title: "Seeding failed", description: safeErrorMessage(error), variant: "destructive" });
+                  } else {
+                    toast({ title: "Demo accounts ready", description: `Processed ${data?.results?.length ?? 0} accounts.` });
+                  }
+                }}
+              >
+                {processing === "seed" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Seed demo accounts
+              </Button>
+            </div>
           </div>
         </div>
 
