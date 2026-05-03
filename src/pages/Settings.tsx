@@ -207,6 +207,7 @@ export default function Settings() {
 
   const tabs = [
     { id: "profile" as const, label: "Profile", icon: User },
+    ...(showPrefs ? [{ id: "preferences" as const, label: "Preferences", icon: Filter }] : []),
     { id: "security" as const, label: "Security", icon: Shield },
   ];
 
@@ -331,6 +332,67 @@ export default function Settings() {
                       </Button>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {activeTab === "preferences" && showPrefs && (
+                <div className="space-y-6">
+                  {isInvestor && (
+                    <div className="rounded-lg border border-border bg-card p-6">
+                      <h2 className="font-display font-semibold text-foreground mb-4">Investor Preferences</h2>
+                      <div className="space-y-5">
+                        <div>
+                          <Label>Industries of interest</Label>
+                          <ChipSelect options={INDUSTRIES} selected={investorPrefs.investment_focus} onToggle={(v) => setInvestorPrefs({ ...investorPrefs, investment_focus: toggleArr(investorPrefs.investment_focus, v) })} />
+                        </div>
+                        <div>
+                          <Label>Preferred startup stages</Label>
+                          <ChipSelect options={STAGES} selected={investorPrefs.preferred_stages} onToggle={(v) => setInvestorPrefs({ ...investorPrefs, preferred_stages: toggleArr(investorPrefs.preferred_stages, v) })} />
+                        </div>
+                        <div>
+                          <Label>Innovation categories</Label>
+                          <ChipSelect options={CATEGORIES} selected={investorPrefs.innovation_categories} onToggle={(v) => setInvestorPrefs({ ...investorPrefs, innovation_categories: toggleArr(investorPrefs.innovation_categories, v) })} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div><Label>Min investment ($)</Label><Input type="number" value={investorPrefs.min_investment} onChange={(e) => setInvestorPrefs({ ...investorPrefs, min_investment: e.target.value })} className="mt-1.5" /></div>
+                          <div><Label>Max investment ($)</Label><Input type="number" value={investorPrefs.max_investment} onChange={(e) => setInvestorPrefs({ ...investorPrefs, max_investment: e.target.value })} className="mt-1.5" /></div>
+                        </div>
+                        <Button onClick={saveInvestorPrefs} disabled={savingPrefs} className="gap-2">
+                          {savingPrefs ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save Preferences
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {isMentor && (
+                    <div className="rounded-lg border border-border bg-card p-6">
+                      <h2 className="font-display font-semibold text-foreground mb-4">Mentor Preferences</h2>
+                      <div className="space-y-5">
+                        <div>
+                          <Label>Industries</Label>
+                          <ChipSelect options={INDUSTRIES} selected={mentorPrefs.industries} onToggle={(v) => setMentorPrefs({ ...mentorPrefs, industries: toggleArr(mentorPrefs.industries, v) })} />
+                        </div>
+                        <div>
+                          <Label>Areas of expertise</Label>
+                          <ChipSelect options={["Product","Engineering","Go-to-Market","Fundraising","Operations","Design","Legal","Finance"]} selected={mentorPrefs.expertise} onToggle={(v) => setMentorPrefs({ ...mentorPrefs, expertise: toggleArr(mentorPrefs.expertise, v) })} />
+                        </div>
+                        <div>
+                          <Label>Preferred startup categories</Label>
+                          <ChipSelect options={CATEGORIES} selected={mentorPrefs.preferred_categories} onToggle={(v) => setMentorPrefs({ ...mentorPrefs, preferred_categories: toggleArr(mentorPrefs.preferred_categories, v) })} />
+                        </div>
+                        <div>
+                          <Label>Specialization</Label>
+                          <Input value={mentorPrefs.specialization} onChange={(e) => setMentorPrefs({ ...mentorPrefs, specialization: e.target.value })} placeholder="e.g. Hardware prototyping" className="mt-1.5" />
+                        </div>
+                        <div>
+                          <Label>Availability</Label>
+                          <Input value={mentorPrefs.availability} onChange={(e) => setMentorPrefs({ ...mentorPrefs, availability: e.target.value })} placeholder="e.g. 2 hours / week" className="mt-1.5" />
+                        </div>
+                        <Button onClick={saveMentorPrefs} disabled={savingPrefs} className="gap-2">
+                          {savingPrefs ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save Preferences
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
