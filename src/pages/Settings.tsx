@@ -11,14 +11,44 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { safeErrorMessage } from "@/lib/errors";
-import { User, Shield, Camera, Save, Loader2 } from "lucide-react";
+import { User, Shield, Camera, Save, Loader2, Filter } from "lucide-react";
+
+const INDUSTRIES = ["AgriTech","FinTech","EdTech","HealthTech","CleanTech","Logistics","E-commerce","AI/ML","PropTech","InsurTech"];
+const STAGES = ["pre_seed","seed","series_a","series_b_plus"];
+const CATEGORIES = ["Hardware","Software","Marketplace","Research","Social Impact","Sustainability","Mobile App","Platform"];
+
+function ChipSelect({ options, selected, onToggle }: { options: string[]; selected: string[]; onToggle: (v: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2 mt-1.5">
+      {options.map((o) => {
+        const active = selected.includes(o);
+        return (
+          <button
+            type="button"
+            key={o}
+            onClick={() => onToggle(o)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+              active ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:border-primary/40"
+            }`}
+          >{o}</button>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Settings() {
   const { user, profile, roles, loading } = useAuth();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "account" | "security">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "preferences" | "security">("profile");
+  const [investorPrefs, setInvestorPrefs] = useState({ investment_focus: [] as string[], preferred_stages: [] as string[], innovation_categories: [] as string[], min_investment: "", max_investment: "" });
+  const [mentorPrefs, setMentorPrefs] = useState({ industries: [] as string[], expertise: [] as string[], preferred_categories: [] as string[], specialization: "", availability: "" });
+  const [savingPrefs, setSavingPrefs] = useState(false);
+  const isInvestor = roles.includes("investor");
+  const isMentor = roles.includes("mentor");
+  const showPrefs = isInvestor || isMentor;
 
   const [form, setForm] = useState({
     full_name: "",
@@ -49,6 +79,32 @@ export default function Settings() {
     }
   }, [profile]);
 
+  useEffect(() => {
+    if (!user) return;
+    if (isInvestor) {
+      supabase.from("investor_profiles").select("*").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+        if (data) setInvestorPrefs({
+          investment_focus: data.investment_focus || [],
+          preferred_stages: data.preferred_stages || [],
+          innovation_categories: data.innovation_categories || [],
+          min_investment: data.min_investment?.toString() || "",
+          max_investment: data.max_investment?.toString() || "",
+        });
+      });
+    }
+    if (isMentor) {
+      supabase.from("mentor_profiles").select("*").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+        if (data) setMentorPrefs({
+          industries: data.industries || [],
+          expertise: data.expertise || [],
+          preferred_categories: data.preferred_categories || [],
+          specialization: data.specialization || "",
+          availability: data.availability || "",
+        });
+      });
+    }
+  }, [user, isInvestor, isMentor]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -59,7 +115,38 @@ export default function Settings() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  const handleSaveProfile = async () => {
+  const toggleArr = (arr: string[], v: string) => arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
+
+  const saveInvestorPrefs = async () => {
+    setSavingPrefs(true);
+    const payload = {
+      user_id: user.id,
+      investment_focus: investorPrefs.investment_focus,
+      preferred_stages: investorPrefs.preferred_stages,
+      innovation_categories: investorPrefs.innovation_categories,
+      min_investment: investorPrefs.min_investment ? Number(investorPrefs.min_investment) : null,
+      max_investment: investorPrefs.max_investment ? Number(investorPrefs.max_investment) : null,
+    };
+    const { data: existing } = await supabase.from("investor_profiles").select("id").eq("user_id", user.id).maybeSingle();
+    const { error } = existing
+      ? await supabase.from("investor_profiles").update(payload).eq("user_id", user.id)
+      : await supabase.from("investor_profiles").insert(payload);
+    setSavingPrefs(false);
+    if (error) toast({ title: "Error", description: safeErrorMessage(error), variant: "destructive" });
+    else toast({ title: "Preferences saved" });
+  };
+
+  const saveMentorPrefs = async () => {
+    setSavingPrefs(true);
+    const payload = { user_id: user.id, ...mentorPrefs };
+    const { data: existing } = await supabase.from("mentor_profiles").select("id").eq("user_id", user.id).maybeSingle();
+    const { error } = existing
+      ? await supabase.from("mentor_profiles").update(payload).eq("user_id", user.id)
+      : await supabase.from("mentor_profiles").insert(payload);
+    setSavingPrefs(false);
+    if (error) toast({ title: "Error", description: safeErrorMessage(error), variant: "destructive" });
+    else toast({ title: "Preferences saved" });
+  };
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
