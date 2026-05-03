@@ -146,6 +146,7 @@ export default function Settings() {
     setSavingPrefs(false);
     if (error) toast({ title: "Error", description: safeErrorMessage(error), variant: "destructive" });
     else toast({ title: "Preferences saved" });
+  };
 
   const handleSaveProfile = async () => {
     setSaving(true);
