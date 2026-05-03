@@ -12,16 +12,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { safeErrorMessage } from "@/lib/errors";
-import { Loader2, Upload, FileCheck, ArrowLeft } from "lucide-react";
+import { Loader2, Upload, FileCheck, ArrowLeft, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 
 type FundingStage = Database["public"]["Enums"]["funding_stage"];
+type CurrencyType = Database["public"]["Enums"]["currency_type"];
 
 const INDUSTRIES = ["AgriTech", "FinTech", "EdTech", "HealthTech", "CleanTech", "Logistics", "E-commerce", "AI/ML", "PropTech", "InsurTech", "Other"];
+const CURRENCIES: { label: string; value: CurrencyType }[] = [
+  { label: "ZMK (Zambian Kwacha)", value: "ZMK" },
+  { label: "USD (US Dollar)", value: "USD" },
+  { label: "EUR (Euro)", value: "EUR" },
+  { label: "GBP (British Pound)", value: "GBP" },
+  { label: "ZAR (South African Rand)", value: "ZAR" },
+];
 
 export default function CreateStartup() {
-  const { user, loading } = useAuth();
+  const { user, loading, isVerified } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -38,6 +46,7 @@ export default function CreateStartup() {
     industry: "",
     funding_stage: "" as FundingStage | "",
     funding_requested: "",
+    currency: "ZMK" as CurrencyType,
     website: "",
     demo_video_url: "",
     is_university_project: false,
@@ -101,6 +110,7 @@ export default function CreateStartup() {
         industry: form.industry || null,
         funding_stage: (form.funding_stage as FundingStage) || null,
         funding_requested: form.funding_requested ? Number(form.funding_requested) : null,
+        currency: form.currency,
         website: form.website || null,
         demo_video_url: form.demo_video_url || null,
         is_university_project: form.is_university_project,
@@ -137,6 +147,15 @@ export default function CreateStartup() {
             </Link>
             <h1 className="font-display text-2xl font-bold text-foreground">Create Startup</h1>
             <p className="text-sm text-muted-foreground mt-1">Add your venture to get discovered by investors and mentors</p>
+            {!isVerified && (
+              <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 flex gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-medium mb-1">Account not verified</p>
+                  <p>You can create startup drafts, but publishing will be available once your account is verified by our team.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -214,8 +233,16 @@ export default function CreateStartup() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Funding Requested ($)</Label>
-                  <Input type="number" value={form.funding_requested} onChange={(e) => update("funding_requested", e.target.value)} placeholder="50000" className="mt-1.5" />
+                  <Label>Funding Requested</Label>
+                  <div className="flex gap-2 mt-1.5">
+                    <Input type="number" value={form.funding_requested} onChange={(e) => update("funding_requested", e.target.value)} placeholder="50000" className="flex-1" />
+                    <Select value={form.currency} onValueChange={(v) => update("currency", v as CurrencyType)}>
+                      <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {CURRENCIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.value}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             </div>

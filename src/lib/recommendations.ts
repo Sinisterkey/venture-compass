@@ -44,7 +44,8 @@ export async function recommendStartupsForInvestor(userId: string): Promise<Reco
     return { ...s, match_reasons: reasons } as RecommendedStartup;
   });
 
-  return scored.sort((a, b) => b.match_reasons.length - a.match_reasons.length).slice(0, 10);
+  // Filter to only startups with at least one match reason, then sort and limit
+  return scored.filter(s => s.match_reasons.length > 0).sort((a, b) => b.match_reasons.length - a.match_reasons.length).slice(0, 10);
 }
 
 /** Rule-based recommendations for a mentor. */
@@ -73,5 +74,6 @@ export async function recommendStartupsForMentor(userId: string): Promise<Recomm
     return { ...s, match_reasons: reasons } as RecommendedStartup;
   });
 
-  return scored.sort((a, b) => b.match_reasons.length - a.match_reasons.length).slice(0, 10);
+  // Filter to only startups with at least one match reason, then sort and limit
+  return scored.filter(s => s.match_reasons.length > 0).sort((a, b) => b.match_reasons.length - a.match_reasons.length).slice(0, 10);
 }

@@ -44,7 +44,7 @@ const REQUEST_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const { user, profile, roles, loading } = useAuth();
+  const { user, profile, roles, loading, isVerified } = useAuth();
   const [myStartups, setMyStartups] = useState<Startup[]>([]);
   const [recs, setRecs] = useState<RecommendedStartup[]>([]);
   const [recsLoading, setRecsLoading] = useState(false);
@@ -196,7 +196,18 @@ export default function Dashboard() {
                             </div>
                             <div className="flex gap-2 ml-3">
                               {s.pitch_deck_url && <Badge variant="outline" className="text-xs gap-1"><FileText className="h-3 w-3" /> Deck</Badge>}
-                              {!s.is_published && <Button size="sm" variant="outline" onClick={() => publishStartup(s.id)} className="text-xs">Publish</Button>}
+                              {!s.is_published && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => publishStartup(s.id)} 
+                                  disabled={!isVerified}
+                                  title={!isVerified ? "Account must be verified to publish" : "Publish this startup"}
+                                  className="text-xs"
+                                >
+                                  Publish
+                                </Button>
+                              )}
                             </div>
                           </div>
                         ))}
