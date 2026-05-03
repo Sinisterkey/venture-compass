@@ -42,6 +42,9 @@ export default function CreateStartup() {
     demo_video_url: "",
     is_university_project: false,
     university_name: "",
+    current_stage: "idea",
+    innovation_category: "",
+    milestones: "",
   });
 
   if (loading) {
@@ -102,6 +105,9 @@ export default function CreateStartup() {
         demo_video_url: form.demo_video_url || null,
         is_university_project: form.is_university_project,
         university_name: form.is_university_project ? form.university_name : null,
+        current_stage: form.current_stage as any,
+        innovation_category: form.innovation_category || null,
+        milestones: form.milestones ? form.milestones.split("\n").map((m) => m.trim()).filter(Boolean) : [],
         logo_url,
         pitch_deck_url,
         is_published: false,
@@ -211,6 +217,34 @@ export default function CreateStartup() {
                   <Label>Funding Requested ($)</Label>
                   <Input type="number" value={form.funding_requested} onChange={(e) => update("funding_requested", e.target.value)} placeholder="50000" className="mt-1.5" />
                 </div>
+              </div>
+            </div>
+
+            {/* Maturity */}
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="font-display font-semibold text-foreground mb-4">Innovation & Maturity</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Current Stage</Label>
+                  <Select value={form.current_stage} onValueChange={(v) => update("current_stage", v)}>
+                    <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="idea">Idea Stage</SelectItem>
+                      <SelectItem value="prototype">Prototype Stage</SelectItem>
+                      <SelectItem value="mvp">MVP Stage</SelectItem>
+                      <SelectItem value="pilot">Pilot Testing</SelectItem>
+                      <SelectItem value="revenue">Revenue Generating</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Innovation Category</Label>
+                  <Input value={form.innovation_category} onChange={(e) => update("innovation_category", e.target.value)} placeholder="Hardware, Software, Marketplace..." className="mt-1.5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <Label>Milestones Achieved (one per line)</Label>
+                <Textarea value={form.milestones} onChange={(e) => update("milestones", e.target.value)} rows={3} className="mt-1.5" placeholder="Won campus pitch competition\nReached 100 pilot users" />
               </div>
             </div>
 
