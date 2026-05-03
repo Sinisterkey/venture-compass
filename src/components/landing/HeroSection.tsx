@@ -19,12 +19,12 @@ export function HeroSection() {
       <div className="container relative z-10 py-20 md:py-28">
         <div className="max-w-2xl animate-fade-in">
           <h1 className="font-display text-4xl md:text-5xl lg:text-[3.5rem] font-bold leading-[1.1] tracking-tight text-secondary-foreground mb-5">
-            Fueling Africa's next generation of{" "}
-            <span className="text-primary">innovators</span>
+            A university innovation ecosystem for{" "}
+            <span className="text-primary">student-led ventures</span>
           </h1>
 
           <p className="text-lg text-secondary-foreground/70 max-w-lg mb-10 leading-relaxed">
-            LaunchPad Africa connects university student founders to the mentorship, network, and funding to build the next success story.
+            LaunchPad Africa helps university student startups gain visibility, mentorship, collaboration opportunities, and structured investment exposure — anchored on Mukuba University as our primary case study context.
           </p>
 
           {!loading && (

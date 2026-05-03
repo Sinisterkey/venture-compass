@@ -12,11 +12,10 @@ export default function About() {
           <div className="container py-16 md:py-24">
             <div className="max-w-2xl">
               <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Empowering Africa's next generation of innovators
+                A university-centered innovation ecosystem
               </h1>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                LaunchPad Africa is an ecosystem platform connecting university student founders
-                with investors, mentors, and resources to build transformative ventures across the continent.
+                LaunchPad Africa is a university-centered innovation ecosystem platform designed to help student-led startups gain visibility, mentorship, collaboration opportunities, and investment exposure — evaluated using Mukuba University as a primary case study context.
               </p>
             </div>
           </div>
@@ -28,22 +27,18 @@ export default function About() {
             <div>
               <h2 className="font-display text-2xl font-bold text-foreground mb-4">Our Mission</h2>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                We believe Africa's universities are home to the continent's most promising innovators.
-                Yet too many brilliant ideas never leave the campus because student founders lack access
-                to funding, mentorship, and visibility.
+                Africa's universities are home to many of the continent's most promising innovators. Too often these ideas never leave the campus because student founders lack structured visibility, mentorship and investment exposure.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                LaunchPad Africa bridges that gap — giving university-backed startups a credible platform
-                to showcase their work, get matched with the right investors and mentors through AI,
-                and build ventures that solve real problems across the continent.
+                LaunchPad Africa provides a professional, institutional environment for university ventures — using intelligent rule-based filtering, structured collaboration requests and a clear startup maturity model to bridge campus innovation and real-world investment.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { icon: GraduationCap, label: "University Verified", desc: "Student ID verification builds investor trust" },
-                { icon: Target, label: "AI Matching", desc: "Smart pairing of founders with investors & mentors" },
-                { icon: Globe, label: "Pan-African", desc: "Connecting ecosystems across the continent" },
-                { icon: Lightbulb, label: "Innovation First", desc: "Spotlight on real solutions to real problems" },
+                { icon: GraduationCap, label: "University verified", desc: "Student ID verification builds trust with investors and mentors" },
+                { icon: Target, label: "Rule-based filtering", desc: "Transparent recommendations by industry, stage and category" },
+                { icon: Globe, label: "Pan-African", desc: "Mukuba University anchors a continent-wide network" },
+                { icon: Lightbulb, label: "Innovation first", desc: "Spotlight on real solutions to real campus and community problems" },
               ].map((item) => (
                 <div key={item.label} className="p-4 rounded-lg border border-border bg-card">
                   <item.icon className="h-5 w-5 text-primary mb-2" />
@@ -64,17 +59,17 @@ export default function About() {
                 {
                   step: "01",
                   title: "Sign up & get verified",
-                  desc: "Create your account, select your role. Student founders upload their university ID for verification — earning a trust badge that signals legitimacy to investors.",
+                  desc: "Create an account and select your role. Student founders upload a university ID for verification before publishing their venture.",
                 },
                 {
                   step: "02",
-                  title: "Build your profile",
-                  desc: "Founders list their startups with pitch decks and demos. Investors and mentors set their focus areas. Our AI uses this to generate smart matches.",
+                  title: "Build your Pitch Room",
+                  desc: "Founders publish a structured Pitch Room: problem, solution, business model, milestones, and current stage (Idea → Revenue).",
                 },
                 {
                   step: "03",
-                  title: "Connect & grow",
-                  desc: "Get matched with the right people automatically. Browse the ventures directory, message directly, and build partnerships that move the needle.",
+                  title: "Request collaboration",
+                  desc: "Investors and mentors browse via rule-based filters and send structured collaboration requests. Founders accept or decline.",
                 },
               ].map((item) => (
                 <div key={item.step}>

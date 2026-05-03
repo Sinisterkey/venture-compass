@@ -16,14 +16,14 @@ export function UniversitySpotlight() {
               Empowering student founders across Africa
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-6">
-              LaunchPad Africa is built to bridge the gap between university innovation and real-world investment. Students register with their university credentials, get verified by admin review, and earn a trusted badge that boosts investor confidence.
+              LaunchPad Africa is built around campus innovation — anchored on Mukuba University as a primary case study context. Student founders gain a structured platform for visibility, mentorship and investor engagement.
             </p>
 
             <div className="space-y-4 mb-8">
               {[
-                { title: "Verified student badge", desc: "Upload your student ID during signup. Once approved, a verified university badge appears on your profile." },
-                { title: "Increased investor confidence", desc: "Investors can filter for university-backed projects, knowing founders are verified students." },
-                { title: "AI-powered matching", desc: "Get automatically matched with mentors and investors who align with your industry and stage." },
+                { title: "Verified student founders", desc: "University ID verification builds trust with investors and mentors." },
+                { title: "Intelligent rule-based filtering", desc: "Recommendations based on industry, stage, category and university — not opaque AI scoring." },
+                { title: "Structured collaboration", desc: "Investors and mentors send formal collaboration requests; founders accept or decline." },
               ].map((item) => (
                 <div key={item.title} className="flex gap-3">
                   <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -47,6 +47,7 @@ export function UniversitySpotlight() {
             <h3 className="font-display font-semibold text-foreground mb-4">Partner universities</h3>
             <div className="space-y-3">
               {[
+                { name: "Mukuba University", country: "Zambia (Primary case study)", students: 18 },
                 { name: "University of Zambia", country: "Zambia", students: 12 },
                 { name: "Makerere University", country: "Uganda", students: 8 },
                 { name: "University of Cape Town", country: "South Africa", students: 15 },
