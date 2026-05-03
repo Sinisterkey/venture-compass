@@ -129,8 +129,8 @@ export default function Settings() {
     };
     const { data: existing } = await supabase.from("investor_profiles").select("id").eq("user_id", user.id).maybeSingle();
     const { error } = existing
-      ? await supabase.from("investor_profiles").update(payload).eq("user_id", user.id)
-      : await supabase.from("investor_profiles").insert(payload);
+      ? await supabase.from("investor_profiles").update(payload as any).eq("user_id", user.id)
+      : await supabase.from("investor_profiles").insert(payload as any);
     setSavingPrefs(false);
     if (error) toast({ title: "Error", description: safeErrorMessage(error), variant: "destructive" });
     else toast({ title: "Preferences saved" });
