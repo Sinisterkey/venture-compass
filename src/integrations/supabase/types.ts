@@ -14,10 +14,131 @@ export type Database = {
   }
   public: {
     Tables: {
+      collaboration_requests: {
+        Row: {
+          created_at: string
+          founder_id: string
+          id: string
+          message: string | null
+          request_type: Database["public"]["Enums"]["collab_request_type"]
+          requester_id: string
+          requester_role: string
+          startup_id: string
+          status: Database["public"]["Enums"]["collab_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          founder_id: string
+          id?: string
+          message?: string | null
+          request_type: Database["public"]["Enums"]["collab_request_type"]
+          requester_id: string
+          requester_role: string
+          startup_id: string
+          status?: Database["public"]["Enums"]["collab_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          founder_id?: string
+          id?: string
+          message?: string | null
+          request_type?: Database["public"]["Enums"]["collab_request_type"]
+          requester_id?: string
+          requester_role?: string
+          startup_id?: string
+          status?: Database["public"]["Enums"]["collab_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      event_applications: {
+        Row: {
+          applicant_id: string
+          created_at: string
+          event_id: string
+          id: string
+          startup_id: string
+          status: Database["public"]["Enums"]["event_app_status"]
+          updated_at: string
+        }
+        Insert: {
+          applicant_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+          startup_id: string
+          status?: Database["public"]["Enums"]["event_app_status"]
+          updated_at?: string
+        }
+        Update: {
+          applicant_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          startup_id?: string
+          status?: Database["public"]["Enums"]["event_app_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_applications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "innovation_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      innovation_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          location: string | null
+          starts_at: string
+          title: string
+          type: Database["public"]["Enums"]["event_type"]
+          university: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          location?: string | null
+          starts_at: string
+          title: string
+          type: Database["public"]["Enums"]["event_type"]
+          university?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          location?: string | null
+          starts_at?: string
+          title?: string
+          type?: Database["public"]["Enums"]["event_type"]
+          university?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       investor_profiles: {
         Row: {
           created_at: string
+          geographic_preferences: string[] | null
           id: string
+          innovation_categories: string[] | null
           investment_focus: string[] | null
           investor_type: string | null
           max_investment: number | null
@@ -31,7 +152,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          geographic_preferences?: string[] | null
           id?: string
+          innovation_categories?: string[] | null
           investment_focus?: string[] | null
           investor_type?: string | null
           max_investment?: number | null
@@ -45,7 +168,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          geographic_preferences?: string[] | null
           id?: string
+          innovation_categories?: string[] | null
           investment_focus?: string[] | null
           investor_type?: string | null
           max_investment?: number | null
@@ -67,6 +192,8 @@ export type Database = {
           id: string
           industries: string[] | null
           max_mentees: number | null
+          preferred_categories: string[] | null
+          specialization: string | null
           updated_at: string
           user_id: string
         }
@@ -77,6 +204,8 @@ export type Database = {
           id?: string
           industries?: string[] | null
           max_mentees?: number | null
+          preferred_categories?: string[] | null
+          specialization?: string | null
           updated_at?: string
           user_id: string
         }
@@ -87,6 +216,8 @@ export type Database = {
           id?: string
           industries?: string[] | null
           max_mentees?: number | null
+          preferred_categories?: string[] | null
+          specialization?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -228,6 +359,7 @@ export type Database = {
         Row: {
           business_model: string | null
           created_at: string
+          current_stage: Database["public"]["Enums"]["startup_stage"] | null
           demo_video_url: string | null
           description: string | null
           founder_id: string
@@ -235,9 +367,11 @@ export type Database = {
           funding_stage: Database["public"]["Enums"]["funding_stage"] | null
           id: string
           industry: string | null
+          innovation_category: string | null
           is_published: boolean | null
           is_university_project: boolean | null
           logo_url: string | null
+          milestones: string[] | null
           name: string
           pitch_deck_url: string | null
           pitch_score: number | null
@@ -254,6 +388,7 @@ export type Database = {
         Insert: {
           business_model?: string | null
           created_at?: string
+          current_stage?: Database["public"]["Enums"]["startup_stage"] | null
           demo_video_url?: string | null
           description?: string | null
           founder_id: string
@@ -261,9 +396,11 @@ export type Database = {
           funding_stage?: Database["public"]["Enums"]["funding_stage"] | null
           id?: string
           industry?: string | null
+          innovation_category?: string | null
           is_published?: boolean | null
           is_university_project?: boolean | null
           logo_url?: string | null
+          milestones?: string[] | null
           name: string
           pitch_deck_url?: string | null
           pitch_score?: number | null
@@ -280,6 +417,7 @@ export type Database = {
         Update: {
           business_model?: string | null
           created_at?: string
+          current_stage?: Database["public"]["Enums"]["startup_stage"] | null
           demo_video_url?: string | null
           description?: string | null
           founder_id?: string
@@ -287,9 +425,11 @@ export type Database = {
           funding_stage?: Database["public"]["Enums"]["funding_stage"] | null
           id?: string
           industry?: string | null
+          innovation_category?: string | null
           is_published?: boolean | null
           is_university_project?: boolean | null
           logo_url?: string | null
+          milestones?: string[] | null
           name?: string
           pitch_deck_url?: string | null
           pitch_score?: number | null
@@ -435,8 +575,26 @@ export type Database = {
     }
     Enums: {
       app_role: "founder" | "investor" | "mentor" | "university" | "admin"
+      collab_request_type:
+        | "pitch_session"
+        | "meeting"
+        | "prototype_demo"
+        | "additional_info"
+        | "funding_interest"
+        | "offer_mentorship"
+        | "strategy_discussion"
+        | "technical_discussion"
+      collab_status: "pending" | "accepted" | "declined"
+      event_app_status: "pending" | "accepted" | "rejected" | "withdrawn"
+      event_type:
+        | "hackathon"
+        | "fair"
+        | "competition"
+        | "demo_day"
+        | "pitch_event"
       founder_type: "student" | "independent"
       funding_stage: "pre_seed" | "seed" | "series_a" | "series_b_plus"
+      startup_stage: "idea" | "prototype" | "mvp" | "pilot" | "revenue"
       verification_status:
         | "pending"
         | "approved"
@@ -570,8 +728,28 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["founder", "investor", "mentor", "university", "admin"],
+      collab_request_type: [
+        "pitch_session",
+        "meeting",
+        "prototype_demo",
+        "additional_info",
+        "funding_interest",
+        "offer_mentorship",
+        "strategy_discussion",
+        "technical_discussion",
+      ],
+      collab_status: ["pending", "accepted", "declined"],
+      event_app_status: ["pending", "accepted", "rejected", "withdrawn"],
+      event_type: [
+        "hackathon",
+        "fair",
+        "competition",
+        "demo_day",
+        "pitch_event",
+      ],
       founder_type: ["student", "independent"],
       funding_stage: ["pre_seed", "seed", "series_a", "series_b_plus"],
+      startup_stage: ["idea", "prototype", "mvp", "pilot", "revenue"],
       verification_status: [
         "pending",
         "approved",
