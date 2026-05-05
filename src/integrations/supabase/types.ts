@@ -545,18 +545,28 @@ export type Database = {
       }
       published_startups: {
         Row: {
+          business_model: string | null
           city: string | null
           country: string | null
           created_at: string | null
+          current_stage: Database["public"]["Enums"]["startup_stage"] | null
           demo_video_url: string | null
           description: string | null
+          founder_id: string | null
           founder_name: string | null
+          funding_requested: number | null
           funding_stage: Database["public"]["Enums"]["funding_stage"] | null
           id: string | null
           industry: string | null
+          innovation_category: string | null
           is_university_project: boolean | null
           logo_url: string | null
+          milestones: string[] | null
           name: string | null
+          pitch_deck_url: string | null
+          problem_statement: string | null
+          solution: string | null
+          target_market: string | null
           university_name: string | null
           website: string | null
         }
