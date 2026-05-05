@@ -74,8 +74,8 @@ export default function Register() {
       }
     }
 
-    toast({ title: "Account created!", description: "Check your email to verify your account." });
-    navigate("/dashboard");
+    toast({ title: "Account created!", description: "Let's set up your profile." });
+    navigate("/onboarding");
     setLoading(false);
   };
 

@@ -18,6 +18,7 @@ import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import AdminEvents from "./pages/AdminEvents";
 import NotFound from "./pages/NotFound";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/create-startup" element={<CreateStartup />} />
             <Route path="/admin" element={<Admin />} />
