@@ -1,19 +1,22 @@
-import { useEffect, useState } from "react";
-import { Search, SlidersHorizontal, MapPin, GraduationCap, X, List, LayoutGrid, Lock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, SlidersHorizontal, MapPin, GraduationCap, X, List, LayoutGrid, Lock, Rocket, ArrowUpDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-const INDUSTRIES = ["AgriTech", "FinTech", "EdTech", "HealthTech", "CleanTech", "Logistics", "E-commerce", "AI/ML"];
-const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B+"];
+const INDUSTRIES = ["AgriTech", "FinTech", "EdTech", "HealthTech", "CleanTech", "Logistics", "E-commerce", "AI/ML", "PropTech", "InsurTech"];
+const STAGES = ["idea", "prototype", "mvp", "pilot", "revenue", "Pre-Seed", "Seed", "Series A", "Series B+"];
 const COUNTRIES = ["Zambia", "Nigeria", "Kenya", "Ghana", "Rwanda", "Tanzania", "South Africa", "Uganda"];
+
+type SortKey = "newest" | "name" | "stage";
 
 interface Venture {
   id: string;
@@ -24,7 +27,12 @@ interface Venture {
   stage: string;
   university: string | null;
   description: string;
+  logo_url: string | null;
+  source: "showcase" | "live";
+  created_at: string;
 }
+
+const PAGE_SIZE = 24;
 
 export default function Discover() {
   const { user, loading } = useAuth();
@@ -34,49 +42,80 @@ export default function Discover() {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [universityOnly, setUniversityOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [sortBy, setSortBy] = useState<SortKey>("newest");
+  const [page, setPage] = useState(1);
   const [ventures, setVentures] = useState<Venture[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("showcase_ventures")
-        .select("id, name, industry, location, country, stage, university, description")
-        .order("name", { ascending: true });
-      setVentures((data as Venture[]) ?? []);
+      const [showcaseRes, liveRes] = await Promise.all([
+        supabase.from("showcase_ventures").select("id, name, industry, location, country, stage, university, description, logo_url, created_at"),
+        supabase.from("published_startups").select("id, name, industry, current_stage, funding_stage, university_name, country, city, description, logo_url, created_at"),
+      ]);
+
+      const showcase: Venture[] = (showcaseRes.data ?? []).map((s: any) => ({
+        ...s,
+        logo_url: s.logo_url ?? null,
+        source: "showcase" as const,
+      }));
+
+      const live: Venture[] = (liveRes.data ?? []).map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        industry: s.industry ?? "Other",
+        location: [s.city, s.country].filter(Boolean).join(", ") || "—",
+        country: s.country ?? "",
+        stage: s.current_stage ?? s.funding_stage ?? "idea",
+        university: s.university_name ?? null,
+        description: s.description ?? "",
+        logo_url: s.logo_url ?? null,
+        source: "live" as const,
+        created_at: s.created_at,
+      }));
+
+      setVentures([...live, ...showcase]);
       setLoadingData(false);
     })();
   }, []);
 
   const toggleFilter = (arr: string[], setArr: React.Dispatch<React.SetStateAction<string[]>>, val: string) => {
     setArr(arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]);
+    setPage(1);
   };
 
-  const filtered = ventures.filter((s) => {
-    if (search && !s.name.toLowerCase().includes(search.toLowerCase()) && !s.description.toLowerCase().includes(search.toLowerCase())) return false;
-    if (selectedIndustries.length && !selectedIndustries.includes(s.industry)) return false;
-    if (selectedStages.length && !selectedStages.includes(s.stage)) return false;
-    if (selectedCountries.length && !selectedCountries.includes(s.country)) return false;
-    if (universityOnly && !s.university) return false;
-    return true;
-  });
+  const filtered = useMemo(() => {
+    const f = ventures.filter((s) => {
+      if (search && !`${s.name} ${s.description} ${s.industry}`.toLowerCase().includes(search.toLowerCase())) return false;
+      if (selectedIndustries.length && !selectedIndustries.includes(s.industry)) return false;
+      if (selectedStages.length && !selectedStages.includes(s.stage)) return false;
+      if (selectedCountries.length && !selectedCountries.includes(s.country)) return false;
+      if (universityOnly && !s.university) return false;
+      return true;
+    });
+    f.sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "stage") return a.stage.localeCompare(b.stage);
+      return (b.created_at || "").localeCompare(a.created_at || "");
+    });
+    return f;
+  }, [ventures, search, selectedIndustries, selectedStages, selectedCountries, universityOnly, sortBy]);
+
+  const paginated = filtered.slice(0, page * PAGE_SIZE);
+  const hasMore = paginated.length < filtered.length;
 
   const activeFilters = selectedIndustries.length + selectedStages.length + selectedCountries.length + (universityOnly ? 1 : 0);
 
   const clearAll = () => {
-    setSelectedIndustries([]);
-    setSelectedStages([]);
-    setSelectedCountries([]);
-    setUniversityOnly(false);
-    setSearch("");
+    setSelectedIndustries([]); setSelectedStages([]); setSelectedCountries([]); setUniversityOnly(false); setSearch(""); setPage(1);
   };
 
   const FilterPanel = () => (
     <div className="space-y-6">
       <div>
         <h4 className="font-display font-semibold text-xs uppercase tracking-wider text-muted-foreground mb-3">Industry</h4>
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
           {INDUSTRIES.map((ind) => (
             <label key={ind} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
               <Checkbox checked={selectedIndustries.includes(ind)} onCheckedChange={() => toggleFilter(selectedIndustries, setSelectedIndustries, ind)} />
@@ -89,7 +128,7 @@ export default function Discover() {
         <h4 className="font-display font-semibold text-xs uppercase tracking-wider text-muted-foreground mb-3">Stage</h4>
         <div className="space-y-2">
           {STAGES.map((stage) => (
-            <label key={stage} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
+            <label key={stage} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer capitalize">
               <Checkbox checked={selectedStages.includes(stage)} onCheckedChange={() => toggleFilter(selectedStages, setSelectedStages, stage)} />
               {stage}
             </label>
@@ -98,7 +137,7 @@ export default function Discover() {
       </div>
       <div>
         <h4 className="font-display font-semibold text-xs uppercase tracking-wider text-muted-foreground mb-3">Country</h4>
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
           {COUNTRIES.map((c) => (
             <label key={c} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
               <Checkbox checked={selectedCountries.includes(c)} onCheckedChange={() => toggleFilter(selectedCountries, setSelectedCountries, c)} />
@@ -109,7 +148,7 @@ export default function Discover() {
       </div>
       <div>
         <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer">
-          <Checkbox checked={universityOnly} onCheckedChange={(checked) => setUniversityOnly(checked === true)} />
+          <Checkbox checked={universityOnly} onCheckedChange={(checked) => { setUniversityOnly(checked === true); setPage(1); }} />
           <GraduationCap className="h-4 w-4 text-primary" />
           University verified only
         </label>
@@ -124,7 +163,6 @@ export default function Discover() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1 bg-background">
-        {/* Header */}
         <div className="border-b border-border bg-muted/30">
           <div className="container py-6">
             <h1 className="font-display text-2xl font-bold text-foreground mb-1">Ventures Directory</h1>
@@ -133,25 +171,25 @@ export default function Discover() {
         </div>
 
         <div className="container py-6">
-          {/* Search + controls */}
-          <div className="flex gap-3 mb-5">
-            <div className="relative flex-1">
+          <div className="flex flex-wrap gap-3 mb-5">
+            <div className="relative flex-1 min-w-[240px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search ventures..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+              <Input placeholder="Search by name, industry, description..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-10" />
             </div>
+            <Select value={sortBy} onValueChange={(v: SortKey) => setSortBy(v)}>
+              <SelectTrigger className="w-[160px]">
+                <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest first</SelectItem>
+                <SelectItem value="name">Name (A–Z)</SelectItem>
+                <SelectItem value="stage">Stage</SelectItem>
+              </SelectContent>
+            </Select>
             <div className="hidden md:flex border border-border rounded-md overflow-hidden">
-              <button
-                onClick={() => setViewMode("list")}
-                className={`p-2.5 ${viewMode === "list" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <List className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`p-2.5 ${viewMode === "grid" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
+              <button onClick={() => setViewMode("list")} className={`p-2.5 ${viewMode === "list" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}><List className="h-4 w-4" /></button>
+              <button onClick={() => setViewMode("grid")} className={`p-2.5 ${viewMode === "grid" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}><LayoutGrid className="h-4 w-4" /></button>
             </div>
             <Button variant="outline" className="lg:hidden flex items-center gap-2" onClick={() => setShowFilters(!showFilters)}>
               <SlidersHorizontal className="h-4 w-4" /> Filters
@@ -160,14 +198,10 @@ export default function Discover() {
           </div>
 
           <div className="flex gap-8">
-            {/* Sidebar */}
             <aside className="hidden lg:block w-56 shrink-0">
-              <div className="sticky top-20">
-                <FilterPanel />
-              </div>
+              <div className="sticky top-20"><FilterPanel /></div>
             </aside>
 
-            {/* Mobile filters */}
             {showFilters && (
               <div className="lg:hidden fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" onClick={() => setShowFilters(false)}>
                 <div className="absolute right-0 top-0 h-full w-80 max-w-full bg-card border-l border-border p-6 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -180,11 +214,18 @@ export default function Discover() {
               </div>
             )}
 
-            {/* Results */}
             <div className="flex-1 min-w-0 relative">
-              <p className="text-xs text-muted-foreground mb-4">{filtered.length} ventures found</p>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-xs text-muted-foreground">{filtered.length} ventures · showing {paginated.length}</p>
+                {activeFilters > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {[...selectedIndustries, ...selectedStages, ...selectedCountries].map((t) => (
+                      <Badge key={t} variant="secondary" className="text-xs gap-1">{t}</Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-              {/* Auth gate overlay */}
               {!loading && !user && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center">
                   <div className="absolute inset-0 bg-background/60 backdrop-blur-md rounded-lg" />
@@ -193,26 +234,18 @@ export default function Discover() {
                       <Lock className="h-6 w-6 text-primary" />
                     </div>
                     <h3 className="font-display text-lg font-bold text-foreground mb-2">Sign up to explore ventures</h3>
-                    <p className="text-sm text-muted-foreground mb-5">
-                      Create a free account to browse startups, filter by industry, and connect with founders across Africa.
-                    </p>
+                    <p className="text-sm text-muted-foreground mb-5">Create a free account to browse startups, filter, and connect with founders.</p>
                     <div className="flex gap-3 justify-center">
-                      <Button asChild>
-                        <Link to="/register">Create Account</Link>
-                      </Button>
-                      <Button variant="outline" asChild>
-                        <Link to="/login">Log In</Link>
-                      </Button>
+                      <Button asChild><Link to="/register">Create Account</Link></Button>
+                      <Button variant="outline" asChild><Link to="/login">Log In</Link></Button>
                     </div>
                   </div>
                 </div>
               )}
 
               {loadingData ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <Skeleton key={i} className="h-16 w-full" />
-                  ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-44 w-full" />)}
                 </div>
               ) : viewMode === "list" ? (
                 <div className="border border-border rounded-lg overflow-hidden bg-card">
@@ -223,24 +256,21 @@ export default function Discover() {
                     <div className="col-span-2">Stage</div>
                     <div className="col-span-2">Status</div>
                   </div>
-                  {filtered.map((s, i) => (
-                    <Link to={`/ventures/${s.id}`} key={s.id} className={`grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors ${i < filtered.length - 1 ? "border-b border-border" : ""}`}>
-                      <div className="col-span-4">
-                        <p className="font-medium text-sm text-foreground">{s.name}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{s.description}</p>
+                  {paginated.map((s, i) => (
+                    <Link to={`/ventures/${s.id}`} key={s.id} className={`grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors ${i < paginated.length - 1 ? "border-b border-border" : ""}`}>
+                      <div className="col-span-4 flex items-center gap-3">
+                        <VentureLogo logo={s.logo_url} name={s.name} />
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm text-foreground truncate">{s.name}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{s.description}</p>
+                        </div>
                       </div>
-                      <div className="col-span-2 flex items-center">
-                        <Badge variant="secondary" className="text-xs font-normal">{s.industry}</Badge>
-                      </div>
-                      <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="h-3 w-3 shrink-0" />{s.location}
-                      </div>
-                      <div className="col-span-2 flex items-center text-xs text-muted-foreground">{s.stage}</div>
+                      <div className="col-span-2 flex items-center"><Badge variant="secondary" className="text-xs font-normal">{s.industry}</Badge></div>
+                      <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3 shrink-0" />{s.location}</div>
+                      <div className="col-span-2 flex items-center text-xs text-muted-foreground capitalize">{s.stage}</div>
                       <div className="col-span-2 flex items-center">
                         {s.university ? (
-                          <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary">
-                            <GraduationCap className="h-3 w-3" /> {s.university}
-                          </Badge>
+                          <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary"><GraduationCap className="h-3 w-3" /> {s.university}</Badge>
                         ) : (
                           <span className="text-xs text-muted-foreground">Independent</span>
                         )}
@@ -250,26 +280,32 @@ export default function Discover() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {filtered.map((s) => (
-                    <Link to={`/ventures/${s.id}`} key={s.id} className="block p-5 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="font-medium text-sm text-foreground">{s.name}</p>
-                        {s.university && (
-                          <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary">
-                            <GraduationCap className="h-3 w-3" /> {s.university}
-                          </Badge>
-                        )}
+                  {paginated.map((s) => (
+                    <Link to={`/ventures/${s.id}`} key={s.id} className="group flex flex-col p-5 rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-md transition-all">
+                      <div className="flex items-start gap-3 mb-3">
+                        <VentureLogo logo={s.logo_url} name={s.name} size="lg" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display font-semibold text-foreground truncate group-hover:text-primary transition-colors">{s.name}</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><MapPin className="h-3 w-3" />{s.location}</p>
+                        </div>
+                        {s.source === "live" && <Badge variant="outline" className="text-[10px] gap-1 border-primary/30 text-primary shrink-0">Live</Badge>}
                       </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{s.description}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant="secondary" className="text-xs font-normal">{s.industry}</Badge>
-                        <span>·</span>
-                        <span>{s.stage}</span>
-                        <span>·</span>
-                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.country}</span>
+                      <p className="text-sm text-muted-foreground line-clamp-3 mb-4 flex-1">{s.description}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        <Badge variant="secondary" className="text-xs">{s.industry}</Badge>
+                        <Badge variant="outline" className="text-xs capitalize">{s.stage}</Badge>
+                        {s.university && (
+                          <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary"><GraduationCap className="h-3 w-3" /></Badge>
+                        )}
                       </div>
                     </Link>
                   ))}
+                </div>
+              )}
+
+              {hasMore && (
+                <div className="mt-6 flex justify-center">
+                  <Button variant="outline" onClick={() => setPage((p) => p + 1)}>Load more ({filtered.length - paginated.length} remaining)</Button>
                 </div>
               )}
 
@@ -284,6 +320,18 @@ export default function Discover() {
         </div>
       </main>
       <Footer />
+    </div>
+  );
+}
+
+function VentureLogo({ logo, name, size = "sm" }: { logo: string | null; name: string; size?: "sm" | "lg" }) {
+  const dim = size === "lg" ? "h-12 w-12" : "h-9 w-9";
+  if (logo) {
+    return <img src={logo} alt={name} className={`${dim} rounded-md object-cover border border-border shrink-0`} />;
+  }
+  return (
+    <div className={`${dim} rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0 font-display font-bold`}>
+      {name.charAt(0).toUpperCase()}
     </div>
   );
 }
