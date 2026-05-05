@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, GraduationCap, Globe, Target, Briefcase, TrendingUp, DollarSign, Lightbulb, Handshake, FileText, Video } from "lucide-react";
+import { ArrowLeft, MapPin, GraduationCap, Globe, Target, Briefcase, TrendingUp, DollarSign, Lightbulb, Handshake, FileText, Video, CheckCircle2, Download, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -10,52 +10,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StageProgress } from "@/components/StageProgress";
 import { RequestCollaborationDialog } from "@/components/RequestCollaborationDialog";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface Venture {
-  id: string;
-  name: string;
-  industry: string;
-  description: string;
-  problem_statement: string | null;
-  solution: string | null;
-  target_market: string | null;
-  business_model: string | null;
-  location: string;
-  country: string;
-  stage: string;
-  university: string | null;
-  website: string | null;
-  funding_requested: number | null;
-}
-
-interface Startup {
-  id: string;
-  founder_id: string;
-  name: string;
-  description: string | null;
-  industry: string | null;
-  problem_statement: string | null;
-  solution: string | null;
-  target_market: string | null;
-  business_model: string | null;
-  funding_requested: number | null;
-  funding_stage: string | null;
-  current_stage: string | null;
-  innovation_category: string | null;
-  milestones: string[] | null;
-  university_name: string | null;
-  website: string | null;
-  demo_video_url: string | null;
-}
+import { useToast } from "@/hooks/use-toast";
 
 export default function VentureDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, roles } = useAuth();
-  const [venture, setVenture] = useState<Venture | null>(null);
-  const [startup, setStartup] = useState<Startup | null>(null);
+  const { toast } = useToast();
+  const [venture, setVenture] = useState<any>(null);
+  const [startup, setStartup] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [collabOpen, setCollabOpen] = useState(false);
+  const [openingDeck, setOpeningDeck] = useState(false);
 
   const canRequest = !!user && (roles.includes("investor") || roles.includes("mentor"));
 
@@ -64,13 +30,27 @@ export default function VentureDetail() {
     (async () => {
       const [showcaseRes, startupRes] = await Promise.all([
         supabase.from("showcase_ventures").select("*").eq("id", id).maybeSingle(),
-        supabase.from("startups").select("*").eq("id", id).eq("is_published", true).maybeSingle(),
+        supabase.from("startups").select("*").eq("id", id).maybeSingle(),
       ]);
-      setVenture(showcaseRes.data as Venture | null);
-      setStartup(startupRes.data as Startup | null);
+      setVenture(showcaseRes.data);
+      setStartup(startupRes.data);
       setLoading(false);
     })();
   }, [id]);
+
+  const openPitchDeck = async () => {
+    if (!startup?.pitch_deck_url) return;
+    setOpeningDeck(true);
+    const { data, error } = await supabase.storage
+      .from("pitch-decks")
+      .createSignedUrl(startup.pitch_deck_url, 60 * 10);
+    setOpeningDeck(false);
+    if (error || !data?.signedUrl) {
+      toast({ title: "Cannot open pitch deck", description: "You may not have access to this file.", variant: "destructive" });
+      return;
+    }
+    window.open(data.signedUrl, "_blank");
+  };
 
   const v = startup
     ? {
@@ -89,17 +69,22 @@ export default function VentureDetail() {
         innovation_category: startup.innovation_category,
         milestones: startup.milestones,
         demo_video_url: startup.demo_video_url,
+        logo_url: startup.logo_url,
         currentStageEnum: startup.current_stage,
+        hasPitchDeck: !!startup.pitch_deck_url,
+        isDraft: !startup.is_published,
       }
     : venture
-    ? { ...venture, currentStageEnum: null, innovation_category: null, milestones: null, demo_video_url: null }
+    ? { ...venture, currentStageEnum: null, innovation_category: null, milestones: null, demo_video_url: null, hasPitchDeck: false, isDraft: false }
     : null;
+
+  const isOwner = user && startup && startup.founder_id === user.id;
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1 bg-background">
-        <div className="container py-8 max-w-4xl">
+        <div className="container py-8 max-w-5xl">
           <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-6 gap-2">
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
@@ -118,104 +103,120 @@ export default function VentureDetail() {
             </div>
           ) : (
             <>
-              {/* Header */}
-              <div className="border-b border-border pb-6 mb-8">
-                <div className="flex items-start justify-between gap-4 mb-2">
-                  <div className="flex-1">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Pitch Room</p>
-                    <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">{v.name}</h1>
-                  </div>
-                  {v.university && (
-                    <Badge variant="outline" className="gap-1 border-primary/30 text-primary shrink-0 mt-2">
-                      <GraduationCap className="h-3 w-3" /> Verified student
-                    </Badge>
+              {/* Hero */}
+              <div className="rounded-xl border border-border bg-gradient-to-br from-card via-card to-muted/40 p-6 md:p-8 mb-8">
+                <div className="flex items-start gap-5">
+                  {v.logo_url ? (
+                    <img src={v.logo_url} alt={v.name} className="h-20 w-20 rounded-lg object-cover border border-border shrink-0" />
+                  ) : (
+                    <div className="h-20 w-20 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-display text-2xl font-bold shrink-0">
+                      {v.name.charAt(0).toUpperCase()}
+                    </div>
                   )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Pitch Room</p>
+                    <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">{v.name}</h1>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {v.industry && <Badge variant="secondary">{v.industry}</Badge>}
+                      {v.innovation_category && <Badge variant="outline">{v.innovation_category}</Badge>}
+                      <Badge variant="outline" className="capitalize">{v.stage}</Badge>
+                      {v.isDraft && isOwner && <Badge variant="destructive">Draft (only you can see this)</Badge>}
+                      {v.university && (
+                        <Badge variant="outline" className="gap-1 border-primary/30 text-primary">
+                          <GraduationCap className="h-3 w-3" /> {v.university}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-5">
-                  {v.industry && <Badge variant="secondary">{v.industry}</Badge>}
-                  {(v as any).innovation_category && <Badge variant="outline">{(v as any).innovation_category}</Badge>}
-                  {(v as any).location && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{(v as any).location}</span>}
+                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-5">
+                  {v.location && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{v.location}</span>}
                   {v.website && (
                     <a href={v.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
-                      <Globe className="h-3.5 w-3.5" /> Website
+                      <Globe className="h-3.5 w-3.5" /> Website <ExternalLink className="h-3 w-3" />
                     </a>
                   )}
                 </div>
 
-                {/* Stage indicator */}
-                {(v as any).currentStageEnum && (
-                  <div className="mb-5">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Startup maturity</p>
-                    <StageProgress stage={(v as any).currentStageEnum} />
-                  </div>
-                )}
-
-                {startup && canRequest && (
-                  <Button onClick={() => setCollabOpen(true)} className="gap-2">
-                    <Handshake className="h-4 w-4" /> Request Collaboration
-                  </Button>
-                )}
+                <div className="flex flex-wrap gap-2 mt-5">
+                  {v.hasPitchDeck && (
+                    <Button onClick={openPitchDeck} disabled={openingDeck} variant="outline" className="gap-2">
+                      <FileText className="h-4 w-4" /> {openingDeck ? "Opening..." : "View Pitch Deck"}
+                    </Button>
+                  )}
+                  {v.demo_video_url && (
+                    <Button variant="outline" asChild className="gap-2">
+                      <a href={v.demo_video_url} target="_blank" rel="noopener noreferrer"><Video className="h-4 w-4" /> Watch Demo</a>
+                    </Button>
+                  )}
+                  {startup && canRequest && (
+                    <Button onClick={() => setCollabOpen(true)} className="gap-2">
+                      <Handshake className="h-4 w-4" /> Request Collaboration
+                    </Button>
+                  )}
+                </div>
               </div>
 
-              <p className="text-base text-foreground leading-relaxed mb-8">{v.description}</p>
+              {/* Stage progress */}
+              {v.currentStageEnum && (
+                <div className="rounded-lg border border-border bg-card p-5 mb-8">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3 font-semibold">Startup Maturity</p>
+                  <StageProgress stage={v.currentStageEnum} />
+                </div>
+              )}
 
+              {/* Description */}
+              {v.description && (
+                <div className="mb-8">
+                  <h2 className="font-display text-lg font-semibold text-foreground mb-3">About</h2>
+                  <p className="text-base text-foreground leading-relaxed">{v.description}</p>
+                </div>
+              )}
+
+              {/* Problem/Solution Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 {v.problem_statement && (
-                  <DetailCard icon={<Target className="h-5 w-5 text-primary" />} title="Problem statement">
-                    {v.problem_statement}
-                  </DetailCard>
+                  <DetailCard icon={<Target className="h-5 w-5 text-destructive" />} title="The Problem">{v.problem_statement}</DetailCard>
                 )}
                 {v.solution && (
-                  <DetailCard icon={<Lightbulb className="h-5 w-5 text-primary" />} title="Proposed solution">
-                    {v.solution}
-                  </DetailCard>
+                  <DetailCard icon={<Lightbulb className="h-5 w-5 text-primary" />} title="Our Solution">{v.solution}</DetailCard>
                 )}
                 {v.target_market && (
-                  <DetailCard icon={<TrendingUp className="h-5 w-5 text-primary" />} title="Target market">
-                    {v.target_market}
-                  </DetailCard>
+                  <DetailCard icon={<TrendingUp className="h-5 w-5 text-primary" />} title="Target Market">{v.target_market}</DetailCard>
                 )}
                 {v.business_model && (
-                  <DetailCard icon={<Briefcase className="h-5 w-5 text-primary" />} title="Business model">
-                    {v.business_model}
-                  </DetailCard>
+                  <DetailCard icon={<Briefcase className="h-5 w-5 text-primary" />} title="Business Model">{v.business_model}</DetailCard>
                 )}
               </div>
 
+              {/* Funding */}
               {v.funding_requested && (
-                <div className="flex items-center gap-3 p-5 rounded-lg border border-border bg-muted/40 mb-8">
-                  <DollarSign className="h-6 w-6 text-primary" />
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Funding required</p>
-                    <p className="font-display text-xl font-bold text-foreground">${v.funding_requested.toLocaleString()}</p>
+                <div className="flex items-center gap-4 p-6 rounded-lg border-2 border-primary/20 bg-primary/5 mb-8">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <DollarSign className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Funding required</p>
+                    <p className="font-display text-2xl font-bold text-foreground">${Number(v.funding_requested).toLocaleString()}</p>
                   </div>
                 </div>
               )}
 
-              {(v as any).milestones?.length > 0 && (
-                <div className="mb-8">
-                  <h3 className="font-display font-semibold text-foreground mb-3">Milestones achieved</h3>
-                  <ul className="space-y-2">
-                    {(v as any).milestones.map((m: string, i: number) => (
-                      <li key={i} className="flex gap-2 text-sm text-foreground">
-                        <span className="text-primary">•</span>{m}
+              {/* Milestones */}
+              {v.milestones?.length > 0 && (
+                <div className="rounded-lg border border-border bg-card p-6 mb-8">
+                  <h3 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-primary" /> Milestones Achieved
+                  </h3>
+                  <ul className="space-y-2.5">
+                    {v.milestones.map((m: string, i: number) => (
+                      <li key={i} className="flex gap-3 text-sm text-foreground">
+                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <span>{m}</span>
                       </li>
                     ))}
                   </ul>
-                </div>
-              )}
-
-              {(v as any).demo_video_url && (
-                <a href={(v as any).demo_video_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline mb-4">
-                  <Video className="h-4 w-4" /> Watch demo video
-                </a>
-              )}
-
-              {v.university && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <GraduationCap className="h-4 w-4 text-primary" />
-                  Built at <span className="font-medium text-foreground">{v.university}</span>
                 </div>
               )}
             </>
@@ -238,8 +239,8 @@ export default function VentureDetail() {
 
 function DetailCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <div className="p-5 rounded-lg border border-border bg-card">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="p-5 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors">
+      <div className="flex items-center gap-2 mb-3">
         {icon}
         <h3 className="font-display font-semibold text-sm text-foreground">{title}</h3>
       </div>
