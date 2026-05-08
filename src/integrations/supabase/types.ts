@@ -93,12 +93,18 @@ export type Database = {
       }
       innovation_events: {
         Row: {
+          agenda: Json | null
+          capacity: number | null
+          cover_image_url: string | null
           created_at: string
           created_by: string | null
           description: string | null
           ends_at: string | null
           id: string
           location: string | null
+          prizes: string | null
+          registration_deadline: string | null
+          speakers: Json | null
           starts_at: string
           title: string
           type: Database["public"]["Enums"]["event_type"]
@@ -106,12 +112,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          agenda?: Json | null
+          capacity?: number | null
+          cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           ends_at?: string | null
           id?: string
           location?: string | null
+          prizes?: string | null
+          registration_deadline?: string | null
+          speakers?: Json | null
           starts_at: string
           title: string
           type: Database["public"]["Enums"]["event_type"]
@@ -119,12 +131,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          agenda?: Json | null
+          capacity?: number | null
+          cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           ends_at?: string | null
           id?: string
           location?: string | null
+          prizes?: string | null
+          registration_deadline?: string | null
+          speakers?: Json | null
           starts_at?: string
           title?: string
           type?: Database["public"]["Enums"]["event_type"]
@@ -220,6 +238,51 @@ export type Database = {
           specialization?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      pitch_sessions: {
+        Row: {
+          collaboration_request_id: string | null
+          created_at: string
+          duration_minutes: number
+          founder_id: string
+          id: string
+          investor_id: string
+          notes: string | null
+          room_name: string
+          scheduled_at: string
+          startup_id: string
+          status: Database["public"]["Enums"]["pitch_session_status"]
+          updated_at: string
+        }
+        Insert: {
+          collaboration_request_id?: string | null
+          created_at?: string
+          duration_minutes?: number
+          founder_id: string
+          id?: string
+          investor_id: string
+          notes?: string | null
+          room_name: string
+          scheduled_at: string
+          startup_id: string
+          status?: Database["public"]["Enums"]["pitch_session_status"]
+          updated_at?: string
+        }
+        Update: {
+          collaboration_request_id?: string | null
+          created_at?: string
+          duration_minutes?: number
+          founder_id?: string
+          id?: string
+          investor_id?: string
+          notes?: string | null
+          room_name?: string
+          scheduled_at?: string
+          startup_id?: string
+          status?: Database["public"]["Enums"]["pitch_session_status"]
+          updated_at?: string
         }
         Relationships: []
       }
@@ -604,6 +667,7 @@ export type Database = {
         | "pitch_event"
       founder_type: "student" | "independent"
       funding_stage: "pre_seed" | "seed" | "series_a" | "series_b_plus"
+      pitch_session_status: "scheduled" | "live" | "completed" | "cancelled"
       startup_stage: "idea" | "prototype" | "mvp" | "pilot" | "revenue"
       verification_status:
         | "pending"
@@ -759,6 +823,7 @@ export const Constants = {
       ],
       founder_type: ["student", "independent"],
       funding_stage: ["pre_seed", "seed", "series_a", "series_b_plus"],
+      pitch_session_status: ["scheduled", "live", "completed", "cancelled"],
       startup_stage: ["idea", "prototype", "mvp", "pilot", "revenue"],
       verification_status: [
         "pending",
