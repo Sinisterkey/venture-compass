@@ -402,11 +402,51 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
+
+              {pitchSessions.length > 0 && (
+                <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Video className="h-5 w-5 text-primary" />
+                    <h2 className="font-display font-semibold text-foreground">Live Pitch Sessions</h2>
+                  </div>
+                  <div className="space-y-3">
+                    {pitchSessions.map((s) => {
+                      const ms = new Date(s.scheduled_at).getTime();
+                      const minutesUntil = Math.round((ms - Date.now()) / 60000);
+                      const canJoin = minutesUntil <= 10 && minutesUntil > -120;
+                      return (
+                        <div key={s.id} className="rounded-lg border border-border bg-card p-3">
+                          <p className="text-sm font-medium text-foreground">{s.startups?.name || "Pitch session"}</p>
+                          <p className="text-xs text-muted-foreground mb-2">{new Date(s.scheduled_at).toLocaleString()} · {s.duration_minutes} min</p>
+                          <Button asChild size="sm" variant={canJoin ? "default" : "outline"} className="w-full gap-1">
+                            <Link to={`/pitch-session/${s.id}`}>
+                              <Video className="h-3.5 w-3.5" />
+                              {canJoin ? "Join now" : minutesUntil > 0 ? `In ${minutesUntil} min` : "View room"}
+                            </Link>
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </main>
       <Footer />
+      {scheduling && (
+        <SchedulePitchSessionDialog
+          open={!!scheduling}
+          onOpenChange={(v) => { if (!v) setScheduling(null); }}
+          collaborationRequestId={scheduling.requestId}
+          startupId={scheduling.startupId}
+          startupName={scheduling.startupName}
+          investorId={scheduling.investorId}
+          onScheduled={refreshSessions}
+        />
+      )}
     </div>
   );
 }
+
