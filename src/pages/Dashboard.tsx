@@ -95,11 +95,18 @@ export default function Dashboard() {
       // Pitch sessions (founder OR investor)
       const { data: sessions } = await supabase
         .from("pitch_sessions")
-        .select("*, startups(name)")
+        .select("*")
         .or(`founder_id.eq.${user.id},investor_id.eq.${user.id}`)
         .gte("scheduled_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
         .order("scheduled_at", { ascending: true });
-      setPitchSessions(sessions || []);
+      let withNames: any[] = sessions || [];
+      if (withNames.length > 0) {
+        const ids = Array.from(new Set(withNames.map((s) => s.startup_id)));
+        const { data: ss } = await supabase.from("startups").select("id,name").in("id", ids);
+        const byId = new Map((ss || []).map((s: any) => [s.id, s.name]));
+        withNames = withNames.map((s) => ({ ...s, startup_name: byId.get(s.startup_id) }));
+      }
+      setPitchSessions(withNames);
     })();
   }, [user, loading]);
 
@@ -121,11 +128,18 @@ export default function Dashboard() {
     if (!user) return;
     const { data } = await supabase
       .from("pitch_sessions")
-      .select("*, startups(name)")
+      .select("*")
       .or(`founder_id.eq.${user.id},investor_id.eq.${user.id}`)
       .gte("scheduled_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
       .order("scheduled_at", { ascending: true });
-    setPitchSessions(data || []);
+    let withNames: any[] = data || [];
+    if (withNames.length > 0) {
+      const ids = Array.from(new Set(withNames.map((s) => s.startup_id)));
+      const { data: ss } = await supabase.from("startups").select("id,name").in("id", ids);
+      const byId = new Map((ss || []).map((s: any) => [s.id, s.name]));
+      withNames = withNames.map((s) => ({ ...s, startup_name: byId.get(s.startup_id) }));
+    }
+    setPitchSessions(withNames);
   };
 
   const respondToRequest = async (req: CollabRequest, status: "accepted" | "declined") => {
@@ -416,7 +430,7 @@ export default function Dashboard() {
                       const canJoin = minutesUntil <= 10 && minutesUntil > -120;
                       return (
                         <div key={s.id} className="rounded-lg border border-border bg-card p-3">
-                          <p className="text-sm font-medium text-foreground">{s.startups?.name || "Pitch session"}</p>
+                          <p className="text-sm font-medium text-foreground">{s.startup_name || "Pitch session"}</p>
                           <p className="text-xs text-muted-foreground mb-2">{new Date(s.scheduled_at).toLocaleString()} · {s.duration_minutes} min</p>
                           <Button asChild size="sm" variant={canJoin ? "default" : "outline"} className="w-full gap-1">
                             <Link to={`/pitch-session/${s.id}`}>
