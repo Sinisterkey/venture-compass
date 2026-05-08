@@ -1,139 +1,83 @@
+## Goals
 
-# LaunchPad Africa — University Innovation Ecosystem Refocus
-
-This plan keeps the current editorial design system, Tailwind tokens, Supabase RLS architecture, routing, and shadcn patterns. It removes AI/scoring/social mechanics and adds structured, institutional workflows around Mukuba University as a primary case study context.
-
----
-
-## 1. Positioning & Copy Refresh
-
-- Update hero, About page, CTAs, meta tags and `UniversitySpotlight` copy to: *"University-centered innovation ecosystem helping student-led startups gain visibility, mentorship, collaboration, and investment exposure — evaluated using Mukuba University as a primary case study context."*
-- Replace "AI matching / pitch scoring" copy everywhere with **"Intelligent rule-based filtering."**
-- Make Mukuba University the featured/anchor institution in `UniversitySpotlight` and seed it as the primary university in `showcase_ventures`.
-- Remove university *badge* messaging (kept verification, dropped the "badge" framing).
-
-## 2. Removals / Deprecations
-
-- Remove the `ai-match` Edge Function and all calls to it from `Dashboard.tsx`.
-- Remove `pitch_score` usage from UI (column kept in DB but hidden); drop any AI scoring text from `CreateStartup`, `Admin`, dashboards.
-- Remove follow/watchlist/social/feed/comment hooks if any (none currently wired — confirmed by file list).
-- Remove "AI pitch deck analyzer" mention from About/docs.
-
-## 3. Database Migrations
-
-New tables (all with RLS, no AI/scoring fields):
-
-- **`startup_progress`** — `startup_id`, `stage` (enum: `idea | prototype | mvp | pilot | revenue`), `milestone`, `notes`, `updated_at`. RLS: founder writes own; investors/mentors/admin read for published startups.
-- **`collaboration_requests`** — `id`, `startup_id`, `requester_id`, `requester_role` (`investor`|`mentor`), `request_type` (enum), `message`, `status` (`pending|accepted|declined`), timestamps. RLS: requester reads own; founder reads requests on own startups; founder updates status; admin reads all.
-  - Investor types: `pitch_session`, `meeting`, `prototype_demo`, `additional_info`, `funding_interest`.
-  - Mentor types: `offer_mentorship`, `strategy_discussion`, `technical_discussion`.
-- **`innovation_events`** — `id`, `title`, `type` (`hackathon|fair|competition|demo_day|pitch_event`), `description`, `university`, `starts_at`, `ends_at`, `location`, `created_by`. RLS: public read; admin write.
-- **`event_applications`** — `id`, `event_id`, `startup_id`, `applicant_id`, `status`, `created_at`. RLS: applicant + founder read own; admin manages.
-
-Schema additions:
-
-- `startups`: add `current_stage` (same enum as progress), `innovation_category` text, `milestones` text[].
-- `investor_profiles`: add `innovation_categories` text[], `geographic_preferences` text[] (industries/stages/range already exist).
-- `mentor_profiles`: add `specialization` text, `preferred_categories` text[] (expertise/industries/availability already exist).
-
-## 4. Rule-Based Recommendation Engine
-
-Replace `ai-match` with a pure-SQL/TS module `src/lib/recommendations.ts`:
-
-- **For investors** → query `startups` where `is_published=true` and any of: `industry ∈ investment_focus`, `funding_stage ∈ preferred_stages`, `innovation_category ∈ innovation_categories`, `funding_requested` within range; rank by count of matched filters (deterministic, no scoring model).
-- **For mentors** → query startups where `industry ∈ mentor.industries` OR `current_stage ∈ preferred_categories`.
-- **For founders** → list investors/mentors whose preferences include the founder's startup industry/stage/category.
-- All filtering done client-side via Supabase queries — no edge function, no LLM.
-
-Dashboard renders results in a structured **table/list** ("Recommended Startups", "Suggested Mentors") rather than match-score cards.
-
-## 5. Pitch Room
-
-New route `/ventures/:id/pitch-room` (and replace current `VentureDetail` body with a structured Pitch Room layout for owner-created startups; showcase ventures keep their summary view).
-
-Sections (clean editorial layout, no social elements):
-
-1. Overview header (name, university, stage badge, country)
-2. Problem Statement
-3. Proposed Solution
-4. Business Model
-5. Funding Requirements
-6. Pitch Deck (PDF viewer link from `pitch-decks` bucket via signed URL)
-7. Demo Video / Media (from `startup-media`)
-8. Milestones Achieved (list)
-9. Innovation Category & Current Stage progress bar
-10. **Request Collaboration** button (investor/mentor only) → opens dialog
-
-## 6. Request Collaboration Workflow
-
-- New component `RequestCollaborationDialog.tsx`:
-  - Select request type (filtered by viewer role).
-  - Optional short professional message (textarea, 500 char max).
-  - Submits row to `collaboration_requests`.
-- Founder's Dashboard: new **"Collaboration Requests"** table with Accept/Decline actions updating `status`.
-- Investor/Mentor Dashboard: **"My Requests"** table showing status.
-- No chat threads, no replies — single structured request + accept/decline only.
-
-## 7. Startup Progress Tracking
-
-- In `CreateStartup` and a new "Edit Startup" view, founder selects `current_stage` from the 5-stage enum and adds milestones.
-- Pitch Room and showcase cards display a horizontal stage indicator (Idea → Prototype → MVP → Pilot → Revenue) using existing `Progress` / Tailwind tokens.
-
-## 8. Investor & Mentor Preference Setup
-
-- Extend `Settings.tsx` with role-specific preference panels (multi-select industries, stage chips, range slider for investment, category chips, optional country list).
-- Persist to `investor_profiles` / `mentor_profiles`.
-- New users routed to a **one-time Preferences step** after registration before reaching Dashboard.
-
-## 9. Campus Innovation Events Module
-
-- New routes:
-  - `/events` — public list (table/list view).
-  - `/events/:id` — event detail with "Apply with Startup" button for founders.
-  - `/admin/events` — admin CRUD.
-- Founder dashboard: "My Event Applications" table.
-- Investor/mentor dashboard: "Upcoming Events" widget.
-- Mukuba University seeded as the host of 2–3 example events.
-
-## 10. Navigation & Page Updates
-
-- Add `Events` link to navbar (visible to all).
-- Dashboard reorganized into structured sections per role:
-  - **Founder**: My Startups · Progress · Collaboration Requests · Recommended Mentors/Investors · My Event Applications.
-  - **Investor**: Preferences · Recommended Startups · My Requests · Upcoming Events.
-  - **Mentor**: Preferences · Recommended Startups · My Requests · Upcoming Events.
-- Remove "AI Recommendations" headings; rename to "Recommended via filters".
-
-## 11. Technical Cleanup
-
-- Delete `supabase/functions/ai-match/`.
-- Update `documentation.txt` (regenerate to reflect new positioning, removed AI, added modules).
-- Regenerate Supabase TS types after migrations (auto).
-- Keep all existing auth, role guards, RLS function `has_role`, and storage policies intact.
+1. Make Events feel visual and editorial (imagery > text), with a dedicated layout per event.
+2. Polish the startup Pitch Room and pitch deck presentation.
+3. Let founders present live to investors/mentors via an embedded video + screen-share room (Jitsi Meet — no API key required, free, OSS).
 
 ---
 
-## File Changes (high level)
+## 1. Events redesign — visual-first
 
-**New**
-- `supabase/migrations/<ts>_university_ecosystem.sql` (tables, enums, RLS, seed Mukuba events)
-- `src/lib/recommendations.ts`
-- `src/components/RequestCollaborationDialog.tsx`
-- `src/components/StageProgress.tsx`
-- `src/pages/PitchRoom.tsx`
-- `src/pages/Events.tsx`, `src/pages/EventDetail.tsx`, `src/pages/AdminEvents.tsx`
-- `src/pages/PreferencesSetup.tsx`
+### Schema (migration)
+Add to `innovation_events`:
+- `cover_image_url text` — hero image
+- `theme_color text` — accent for cards/hero (optional)
+- `agenda jsonb` — `[{time, title, speaker?}]`
+- `speakers jsonb` — `[{name, role, avatar_url}]`
+- `prizes text`, `capacity int`, `registration_deadline timestamptz`
 
-**Edited**
-- `src/App.tsx` (routes), `src/components/Navbar.tsx` (Events link)
-- `src/pages/Dashboard.tsx` (remove ai-match, add structured sections)
-- `src/pages/Settings.tsx` (preference panels)
-- `src/pages/CreateStartup.tsx` (stage + category + milestones)
-- `src/pages/VentureDetail.tsx` (link to Pitch Room)
-- `src/pages/About.tsx`, `src/components/landing/HeroSection.tsx`, `src/components/landing/CTASection.tsx`, `src/components/landing/UniversitySpotlight.tsx` (copy refresh, Mukuba focus)
-- `src/pages/Admin.tsx` (events management entry, remove AI scoring UI)
+### Event cover images (auto-generated)
+- Generate one branded banner per event `type` (hackathon, demo_day, fair, pitch_competition, workshop) into `src/assets/events/` using `imagegen` — used as default when an event has no `cover_image_url`.
+- Admin form (`AdminEvents.tsx`) gains optional cover upload to the existing public `startup-media` bucket.
 
-**Deleted**
-- `supabase/functions/ai-match/index.ts`
+### Events listing (`src/pages/Events.tsx`)
+Replace the row list with an editorial magazine layout:
+- Featured event hero (largest upcoming) — full-bleed cover, type chip, date, location overlaid.
+- Below: 3-column image-led card grid (cover image, type badge, title, date/location, university chip). Minimal copy.
+- Filter chips: All / Hackathons / Demo Days / Fairs / Workshops. Tabs for Upcoming / Past.
 
-The end result: a structured, professional, university-innovation platform — no social feed, no AI scoring, with rule-based recommendations and clear institutional workflows.
+### Event detail (`src/pages/EventDetail.tsx`)
+Bespoke layout (not the current narrow column):
+- Full-width hero with cover image, gradient overlay, title, date, location, university badge, countdown.
+- Two-column body: left = description, agenda timeline, prizes, speakers grid (avatar cards); right = sticky apply card (status, capacity, deadline, startup picker, submit).
+- Past-event variant: replace apply card with "Applications closed" + winners section if present.
+
+---
+
+## 2. Pitch Room polish (`src/pages/VentureDetail.tsx`)
+
+- Larger hero with logo, tagline, key metrics row (stage, category, funding ask, university).
+- Tabbed body: **Overview · Pitch Deck · Traction & Milestones · Team · Live Pitch**.
+- **Pitch Deck tab**: keep "Open in new tab" (per your choice) but present it as a polished card — deck thumbnail/icon, file name, last-updated date, big "Open Pitch Deck" CTA, secondary "Watch Demo Video" if present.
+- Investor-only sidebar: "Request Pitch Session", "Request Meeting", contact founder.
+- Founder-owner view: edit shortcuts, request inbox count.
+
+---
+
+## 3. Live online pitching — Embedded Jitsi rooms
+
+We'll use **Jitsi Meet (`@jitsi/react-sdk`)** embedded directly in the platform. Free, no API key, no account needed, supports video, audio, screen-share, chat, recording.
+
+### Schema (migration)
+New table `pitch_sessions`:
+- `id, collaboration_request_id (fk), startup_id, founder_id, investor_id`
+- `room_name text unique` (e.g. `launchpad-<startup-slug>-<short-id>`)
+- `scheduled_at timestamptz, duration_minutes int default 30`
+- `status: scheduled | live | completed | cancelled`
+- `notes text`, `created_at, updated_at`
+
+RLS: founder and invited investor/mentor can SELECT/UPDATE; admins all.
+
+### Workflow
+1. Investor sends `pitch_session` collaboration request (existing flow).
+2. Founder accepts → modal to schedule date/time → row created in `pitch_sessions` with generated `room_name`.
+3. Both parties see the upcoming session on their Dashboard with a "Join Pitch Room" button (enabled within 10 min of `scheduled_at`).
+4. New page `src/pages/PitchSession.tsx` (route `/pitch-session/:id`) renders `<JitsiMeeting>` with:
+   - Room name from DB, display name from profile, screen-share enabled, prejoin disabled, lobby disabled (only invited parties have URL + RLS guard).
+   - Side panel: startup summary, pitch deck quick-open, founder notes (founder-only edit).
+5. After session, status → `completed`; investor can leave private feedback (optional `pitch_session_feedback` table).
+
+### New / changed files
+- **New**: `supabase/migrations/<ts>_events_visuals_and_pitch_sessions.sql`, `src/pages/PitchSession.tsx`, `src/components/SchedulePitchSessionDialog.tsx`, `src/components/events/EventHero.tsx`, `src/components/events/EventCard.tsx`, `src/assets/events/*.jpg` (5 generated covers).
+- **Edited**: `src/pages/Events.tsx`, `src/pages/EventDetail.tsx`, `src/pages/AdminEvents.tsx`, `src/pages/VentureDetail.tsx`, `src/pages/Dashboard.tsx` (upcoming sessions panel + accept-request → schedule), `src/App.tsx` (new route), `src/integrations/supabase/types.ts` (auto).
+- **Dependency**: `bun add @jitsi/react-sdk`.
+
+### Memory updates
+Add `mem://features/pitch-sessions` and update index Core line to mention Jitsi-based live pitch rooms.
+
+---
+
+## Out of scope
+- Recording storage (Jitsi local recording only for now).
+- Payments / paid events.
+- Public comments / chat outside the live session.
