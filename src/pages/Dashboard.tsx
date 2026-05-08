@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { safeErrorMessage } from "@/lib/errors";
 import {
-  Eye, Users, Rocket, ArrowRight, Plus, Settings, GraduationCap, FileText, Filter, Calendar, Handshake, CheckCircle2, XCircle,
+  Eye, Users, Rocket, ArrowRight, Plus, Settings, GraduationCap, FileText, Filter, Calendar, Handshake, CheckCircle2, XCircle, Video,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import {
@@ -17,6 +17,7 @@ import {
   recommendStartupsForMentor,
   type RecommendedStartup,
 } from "@/lib/recommendations";
+import { SchedulePitchSessionDialog } from "@/components/SchedulePitchSessionDialog";
 
 type Startup = Database["public"]["Tables"]["startups"]["Row"];
 
@@ -51,6 +52,8 @@ export default function Dashboard() {
   const [incomingRequests, setIncomingRequests] = useState<CollabRequest[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<CollabRequest[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [pitchSessions, setPitchSessions] = useState<any[]>([]);
+  const [scheduling, setScheduling] = useState<{ requestId: string; startupId: string; startupName: string; investorId: string } | null>(null);
   const { toast } = useToast();
 
   const primaryRole = roles[0] ?? null;
@@ -88,6 +91,15 @@ export default function Dashboard() {
         .order("starts_at", { ascending: true })
         .limit(3);
       setUpcomingEvents(events || []);
+
+      // Pitch sessions (founder OR investor)
+      const { data: sessions } = await supabase
+        .from("pitch_sessions")
+        .select("*, startups(name)")
+        .or(`founder_id.eq.${user.id},investor_id.eq.${user.id}`)
+        .gte("scheduled_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
+        .order("scheduled_at", { ascending: true });
+      setPitchSessions(sessions || []);
     })();
   }, [user, loading]);
 
@@ -105,13 +117,27 @@ export default function Dashboard() {
     });
   }, [user, primaryRole]);
 
-  const respondToRequest = async (id: string, status: "accepted" | "declined") => {
-    const { error } = await supabase.from("collaboration_requests").update({ status }).eq("id", id);
+  const refreshSessions = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("pitch_sessions")
+      .select("*, startups(name)")
+      .or(`founder_id.eq.${user.id},investor_id.eq.${user.id}`)
+      .gte("scheduled_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
+      .order("scheduled_at", { ascending: true });
+    setPitchSessions(data || []);
+  };
+
+  const respondToRequest = async (req: CollabRequest, status: "accepted" | "declined") => {
+    const { error } = await supabase.from("collaboration_requests").update({ status }).eq("id", req.id);
     if (error) {
       toast({ title: "Error", description: safeErrorMessage(error), variant: "destructive" });
-    } else {
-      toast({ title: `Request ${status}` });
-      setIncomingRequests((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
+      return;
+    }
+    toast({ title: `Request ${status}` });
+    setIncomingRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status } : r));
+    if (status === "accepted" && req.request_type === "pitch_session") {
+      setScheduling({ requestId: req.id, startupId: req.startup_id, startupName: "this startup", investorId: req.requester_id });
     }
   };
 
@@ -231,10 +257,10 @@ export default function Dashboard() {
                               </div>
                               {r.status === "pending" && (
                                 <div className="flex gap-2">
-                                  <Button size="sm" variant="outline" onClick={() => respondToRequest(r.id, "accepted")} className="gap-1 text-xs">
-                                    <CheckCircle2 className="h-3.5 w-3.5" /> Accept
+                                  <Button size="sm" variant="outline" onClick={() => respondToRequest(r, "accepted")} className="gap-1 text-xs">
+                                    <CheckCircle2 className="h-3.5 w-3.5" /> {r.request_type === "pitch_session" ? "Accept & Schedule" : "Accept"}
                                   </Button>
-                                  <Button size="sm" variant="outline" onClick={() => respondToRequest(r.id, "declined")} className="gap-1 text-xs">
+                                  <Button size="sm" variant="outline" onClick={() => respondToRequest(r, "declined")} className="gap-1 text-xs">
                                     <XCircle className="h-3.5 w-3.5" /> Decline
                                   </Button>
                                 </div>
