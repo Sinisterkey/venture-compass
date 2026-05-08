@@ -19,6 +19,7 @@ import EventDetail from "./pages/EventDetail";
 import AdminEvents from "./pages/AdminEvents";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
+import PitchSession from "./pages/PitchSession";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/ventures/:id" element={<VentureDetail />} />
             <Route path="/events" element={<Events />} />
             <Route path="/events/:id" element={<EventDetail />} />
+            <Route path="/pitch-session/:id" element={<PitchSession />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
