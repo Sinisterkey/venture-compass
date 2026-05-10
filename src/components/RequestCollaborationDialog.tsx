@@ -42,7 +42,9 @@ export function RequestCollaborationDialog({ open, onOpenChange, startupId, foun
   const [requestType, setRequestType] = useState(defaultRequestType ?? "");
 
   // sync default when dialog re-opens with a different default
-  useState(() => {});
+  useEffect(() => {
+    if (open && defaultRequestType) setRequestType(defaultRequestType);
+  }, [open, defaultRequestType]);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
