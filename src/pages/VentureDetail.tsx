@@ -21,6 +21,7 @@ export default function VentureDetail() {
   const [startup, setStartup] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [collabOpen, setCollabOpen] = useState(false);
+  const [collabDefault, setCollabDefault] = useState<string | undefined>(undefined);
   const [openingDeck, setOpeningDeck] = useState(false);
 
   const canRequest = !!user && (roles.includes("investor") || roles.includes("mentor"));
