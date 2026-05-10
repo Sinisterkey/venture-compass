@@ -28,9 +28,10 @@ interface Props {
   startupId: string;
   founderId: string;
   startupName: string;
+  defaultRequestType?: string;
 }
 
-export function RequestCollaborationDialog({ open, onOpenChange, startupId, founderId, startupName }: Props) {
+export function RequestCollaborationDialog({ open, onOpenChange, startupId, founderId, startupName, defaultRequestType }: Props) {
   const { user, roles } = useAuth();
   const { toast } = useToast();
   const isInvestor = roles.includes("investor");
@@ -38,7 +39,10 @@ export function RequestCollaborationDialog({ open, onOpenChange, startupId, foun
   const role: "investor" | "mentor" | null = isInvestor ? "investor" : isMentor ? "mentor" : null;
   const types = role === "investor" ? INVESTOR_TYPES : MENTOR_TYPES;
 
-  const [requestType, setRequestType] = useState("");
+  const [requestType, setRequestType] = useState(defaultRequestType ?? "");
+
+  // sync default when dialog re-opens with a different default
+  useState(() => {});
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
