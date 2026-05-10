@@ -21,6 +21,7 @@ export default function VentureDetail() {
   const [startup, setStartup] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [collabOpen, setCollabOpen] = useState(false);
+  const [collabDefault, setCollabDefault] = useState<string | undefined>(undefined);
   const [openingDeck, setOpeningDeck] = useState(false);
 
   const canRequest = !!user && (roles.includes("investor") || roles.includes("mentor"));
@@ -150,8 +151,13 @@ export default function VentureDetail() {
                       <a href={v.demo_video_url} target="_blank" rel="noopener noreferrer"><Video className="h-4 w-4" /> Watch Demo</a>
                     </Button>
                   )}
+                  {startup && canRequest && roles.includes("investor") && (
+                    <Button onClick={() => { setCollabDefault("pitch_session"); setCollabOpen(true); }} className="gap-2">
+                      <Video className="h-4 w-4" /> Request Live Pitch
+                    </Button>
+                  )}
                   {startup && canRequest && (
-                    <Button onClick={() => setCollabOpen(true)} className="gap-2">
+                    <Button onClick={() => { setCollabDefault(undefined); setCollabOpen(true); }} variant={roles.includes("investor") ? "outline" : "default"} className="gap-2">
                       <Handshake className="h-4 w-4" /> Request Collaboration
                     </Button>
                   )}
@@ -231,6 +237,7 @@ export default function VentureDetail() {
           startupId={startup.id}
           founderId={startup.founder_id}
           startupName={startup.name}
+          defaultRequestType={collabDefault}
         />
       )}
     </div>

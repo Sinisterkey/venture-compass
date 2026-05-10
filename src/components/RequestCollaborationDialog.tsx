@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -28,9 +28,10 @@ interface Props {
   startupId: string;
   founderId: string;
   startupName: string;
+  defaultRequestType?: string;
 }
 
-export function RequestCollaborationDialog({ open, onOpenChange, startupId, founderId, startupName }: Props) {
+export function RequestCollaborationDialog({ open, onOpenChange, startupId, founderId, startupName, defaultRequestType }: Props) {
   const { user, roles } = useAuth();
   const { toast } = useToast();
   const isInvestor = roles.includes("investor");
@@ -38,7 +39,12 @@ export function RequestCollaborationDialog({ open, onOpenChange, startupId, foun
   const role: "investor" | "mentor" | null = isInvestor ? "investor" : isMentor ? "mentor" : null;
   const types = role === "investor" ? INVESTOR_TYPES : MENTOR_TYPES;
 
-  const [requestType, setRequestType] = useState("");
+  const [requestType, setRequestType] = useState(defaultRequestType ?? "");
+
+  // sync default when dialog re-opens with a different default
+  useEffect(() => {
+    if (open && defaultRequestType) setRequestType(defaultRequestType);
+  }, [open, defaultRequestType]);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
