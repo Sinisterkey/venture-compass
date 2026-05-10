@@ -237,6 +237,7 @@ export default function VentureDetail() {
           startupId={startup.id}
           founderId={startup.founder_id}
           startupName={startup.name}
+          defaultRequestType={collabDefault}
         />
       )}
     </div>
