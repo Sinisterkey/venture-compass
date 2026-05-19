@@ -204,7 +204,7 @@ export default function VentureDetail() {
                   </div>
                   <div className="flex-1">
                     <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Funding required</p>
-                    <p className="font-display text-2xl font-bold text-foreground">${Number(v.funding_requested).toLocaleString()}</p>
+                    <p className="font-display text-2xl font-bold text-foreground">{format(v.funding_requested)}</p>
                   </div>
                 </div>
               )}
