@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ function Chips({ options, selected, onToggle }: { options: string[]; selected: s
 
 export default function Onboarding() {
   const { user, profile, roles, loading } = useAuth();
+  const { currency } = useCurrency();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);

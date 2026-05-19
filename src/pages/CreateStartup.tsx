@@ -15,6 +15,7 @@ import { safeErrorMessage } from "@/lib/errors";
 import { Loader2, Upload, FileCheck, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 type FundingStage = Database["public"]["Enums"]["funding_stage"];
 
@@ -25,6 +26,7 @@ export default function CreateStartup() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const { currency } = useCurrency();
   const [pitchDeck, setPitchDeck] = useState<File | null>(null);
   const [logo, setLogo] = useState<File | null>(null);
 
