@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Navigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -40,6 +41,7 @@ function ChipSelect({ options, selected, onToggle }: { options: string[]; select
 export default function Settings() {
   const { user, profile, roles, loading } = useAuth();
   const { toast } = useToast();
+  const { currency } = useCurrency();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "preferences" | "security">("profile");
