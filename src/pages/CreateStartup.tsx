@@ -214,7 +214,7 @@ export default function CreateStartup() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Funding Requested ($)</Label>
+                  <Label>Funding Requested ({currency.symbol})</Label>
                   <Input type="number" value={form.funding_requested} onChange={(e) => update("funding_requested", e.target.value)} placeholder="50000" className="mt-1.5" />
                 </div>
               </div>

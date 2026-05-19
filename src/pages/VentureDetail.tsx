@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StageProgress } from "@/components/StageProgress";
 import { RequestCollaborationDialog } from "@/components/RequestCollaborationDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { useToast } from "@/hooks/use-toast";
 
 export default function VentureDetail() {
@@ -17,6 +18,7 @@ export default function VentureDetail() {
   const navigate = useNavigate();
   const { user, roles } = useAuth();
   const { toast } = useToast();
+  const { format } = useCurrency();
   const [venture, setVenture] = useState<any>(null);
   const [startup, setStartup] = useState<any>(null);
   const [loading, setLoading] = useState(true);
