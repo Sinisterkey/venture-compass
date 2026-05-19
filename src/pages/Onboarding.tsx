@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ function Chips({ options, selected, onToggle }: { options: string[]; selected: s
 
 export default function Onboarding() {
   const { user, profile, roles, loading } = useAuth();
+  const { currency } = useCurrency();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -201,8 +203,8 @@ export default function Onboarding() {
                     <Chips options={CATEGORIES} selected={investorPrefs.innovation_categories} onToggle={(v) => setInvestorPrefs({ ...investorPrefs, innovation_categories: toggle(investorPrefs.innovation_categories, v) })} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div><Label>Min investment ($)</Label><Input type="number" value={investorPrefs.min_investment} onChange={(e) => setInvestorPrefs({ ...investorPrefs, min_investment: e.target.value })} className="mt-1.5" /></div>
-                    <div><Label>Max investment ($)</Label><Input type="number" value={investorPrefs.max_investment} onChange={(e) => setInvestorPrefs({ ...investorPrefs, max_investment: e.target.value })} className="mt-1.5" /></div>
+                    <div><Label>Min investment ({currency.symbol})</Label><Input type="number" value={investorPrefs.min_investment} onChange={(e) => setInvestorPrefs({ ...investorPrefs, min_investment: e.target.value })} className="mt-1.5" /></div>
+                    <div><Label>Max investment ({currency.symbol})</Label><Input type="number" value={investorPrefs.max_investment} onChange={(e) => setInvestorPrefs({ ...investorPrefs, max_investment: e.target.value })} className="mt-1.5" /></div>
                   </div>
                 </div>
               )}

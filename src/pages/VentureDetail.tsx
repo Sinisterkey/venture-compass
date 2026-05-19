@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StageProgress } from "@/components/StageProgress";
 import { RequestCollaborationDialog } from "@/components/RequestCollaborationDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { useToast } from "@/hooks/use-toast";
 
 export default function VentureDetail() {
@@ -17,6 +18,7 @@ export default function VentureDetail() {
   const navigate = useNavigate();
   const { user, roles } = useAuth();
   const { toast } = useToast();
+  const { format } = useCurrency();
   const [venture, setVenture] = useState<any>(null);
   const [startup, setStartup] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -204,7 +206,7 @@ export default function VentureDetail() {
                   </div>
                   <div className="flex-1">
                     <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Funding required</p>
-                    <p className="font-display text-2xl font-bold text-foreground">${Number(v.funding_requested).toLocaleString()}</p>
+                    <p className="font-display text-2xl font-bold text-foreground">{format(v.funding_requested)}</p>
                   </div>
                 </div>
               )}
