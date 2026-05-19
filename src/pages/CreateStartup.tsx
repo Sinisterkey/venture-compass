@@ -185,11 +185,10 @@ export default function CreateStartup() {
                   </div>
                 </div>
               </div>
-            </div>
+            </SectionCard>
 
             {/* Problem & Solution */}
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="font-display font-semibold text-foreground mb-4">Problem & Solution</h2>
+            <SectionCard icon={Lightbulb} title="Problem & solution" subtitle="The two paragraphs investors care about most." tone="accent">
               <div className="space-y-4">
                 <div>
                   <Label>Problem Statement</Label>
@@ -202,7 +201,7 @@ export default function CreateStartup() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Target Market</Label>
-                    <Input value={form.target_market} onChange={(e) => update("target_market", e.target.value)} className="mt-1.5" />
+                    <Input value={form.target_market} onChange={(e) => update("target_market", e.target.value)} className="mt-1.5" placeholder="Smallholder farmers in Zambia" />
                   </div>
                   <div>
                     <Label>Business Model</Label>
@@ -210,11 +209,10 @@ export default function CreateStartup() {
                   </div>
                 </div>
               </div>
-            </div>
+            </SectionCard>
 
             {/* Funding */}
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="font-display font-semibold text-foreground mb-4">Funding</h2>
+            <SectionCard icon={Coins} title="Funding" subtitle="What you're raising — leave blank if not raising yet." tone="primary">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Funding Stage</Label>
@@ -233,11 +231,10 @@ export default function CreateStartup() {
                   <Input type="number" value={form.funding_requested} onChange={(e) => update("funding_requested", e.target.value)} placeholder="50000" className="mt-1.5" />
                 </div>
               </div>
-            </div>
+            </SectionCard>
 
             {/* Maturity */}
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="font-display font-semibold text-foreground mb-4">Innovation & Maturity</h2>
+            <SectionCard icon={TrendingUp} title="Innovation & maturity" subtitle="Where you are on the journey." tone="accent">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Current Stage</Label>
@@ -258,16 +255,14 @@ export default function CreateStartup() {
                 </div>
               </div>
               <div className="mt-4">
-                <Label>Milestones Achieved (one per line)</Label>
-                <Textarea value={form.milestones} onChange={(e) => update("milestones", e.target.value)} rows={3} className="mt-1.5" placeholder="Won campus pitch competition\nReached 100 pilot users" />
+                <Label>Milestones achieved (one per line)</Label>
+                <Textarea value={form.milestones} onChange={(e) => update("milestones", e.target.value)} rows={3} className="mt-1.5" placeholder={"Won campus pitch competition\nReached 100 pilot users"} />
               </div>
-            </div>
+            </SectionCard>
 
             {/* Files */}
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="font-display font-semibold text-foreground mb-4">Media & Documents</h2>
+            <SectionCard icon={ImageIcon} title="Media & documents" subtitle="A great logo and deck do a lot of heavy lifting." tone="primary">
               <div className="space-y-4">
-                {/* Logo */}
                 <div>
                   <Label>Logo</Label>
                   <div className="mt-1.5">
@@ -278,16 +273,16 @@ export default function CreateStartup() {
                         <Button variant="ghost" size="sm" onClick={() => setLogo(null)} className="text-xs">Remove</Button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-border hover:border-primary/40 cursor-pointer transition-colors">
-                        <Upload className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Upload logo (PNG, JPG)</span>
+                      <label className="flex flex-col items-center gap-2 p-5 rounded-lg border-2 border-dashed border-border hover:border-primary/40 hover:bg-primary/[0.02] cursor-pointer transition-colors">
+                        <Upload className="h-6 w-6 text-primary" />
+                        <span className="text-sm font-medium text-foreground">Upload logo</span>
+                        <span className="text-xs text-muted-foreground">PNG or JPG</span>
                         <input type="file" className="hidden" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) setLogo(f); }} />
                       </label>
                     )}
                   </div>
                 </div>
 
-                {/* Pitch Deck */}
                 <div>
                   <Label>Pitch Deck</Label>
                   <div className="mt-1.5">
@@ -301,26 +296,25 @@ export default function CreateStartup() {
                         <Button variant="ghost" size="sm" onClick={() => setPitchDeck(null)} className="text-xs">Remove</Button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-border hover:border-primary/40 cursor-pointer transition-colors">
-                        <Upload className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Upload pitch deck (PDF, max 10MB)</span>
+                      <label className="flex flex-col items-center gap-2 p-5 rounded-lg border-2 border-dashed border-border hover:border-primary/40 hover:bg-primary/[0.02] cursor-pointer transition-colors">
+                        <Upload className="h-6 w-6 text-primary" />
+                        <span className="text-sm font-medium text-foreground">Upload pitch deck</span>
+                        <span className="text-xs text-muted-foreground">PDF · max 10MB</span>
                         <input type="file" className="hidden" accept=".pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) setPitchDeck(f); }} />
                       </label>
                     )}
                   </div>
                 </div>
 
-                {/* Demo video */}
                 <div>
                   <Label>Demo Video URL</Label>
                   <Input value={form.demo_video_url} onChange={(e) => update("demo_video_url", e.target.value)} placeholder="https://youtube.com/..." className="mt-1.5" />
                 </div>
               </div>
-            </div>
+            </SectionCard>
 
             {/* University */}
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="font-display font-semibold text-foreground mb-4">University Affiliation</h2>
+            <SectionCard icon={GraduationCap} title="University affiliation" subtitle="University-backed projects get a verified badge." tone="accent">
               <label className="flex items-center gap-2 mb-4 cursor-pointer">
                 <Checkbox checked={form.is_university_project} onCheckedChange={(v) => update("is_university_project", v === true)} />
                 <span className="text-sm text-foreground">This is a university project</span>
@@ -328,17 +322,20 @@ export default function CreateStartup() {
               {form.is_university_project && (
                 <div>
                   <Label>University Name</Label>
-                  <Input value={form.university_name} onChange={(e) => update("university_name", e.target.value)} className="mt-1.5" />
+                  <Input value={form.university_name} onChange={(e) => update("university_name", e.target.value)} className="mt-1.5" placeholder="e.g. Mukuba University" />
                 </div>
               )}
-            </div>
+            </SectionCard>
 
-            <div className="flex gap-3">
-              <Button type="submit" disabled={saving} className="gap-2">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {saving ? "Creating..." : "Create Startup"}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => navigate("/dashboard")}>Cancel</Button>
+            <div className="sticky bottom-4 z-10 rounded-xl bg-card/95 backdrop-blur border border-border shadow-lg p-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+              <p className="text-xs text-muted-foreground">You can publish your startup later from the dashboard.</p>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => navigate("/dashboard")}>Cancel</Button>
+                <Button type="submit" disabled={saving} className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-95">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+                  {saving ? "Creating..." : "Create Startup"}
+                </Button>
+              </div>
             </div>
           </form>
         </div>
@@ -347,3 +344,36 @@ export default function CreateStartup() {
     </div>
   );
 }
+
+function SectionCard({
+  icon: Icon,
+  title,
+  subtitle,
+  tone,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle?: string;
+  tone: "primary" | "accent";
+  children: React.ReactNode;
+}) {
+  const toneClass = tone === "primary"
+    ? "from-primary/15 to-primary/[0.02] text-primary"
+    : "from-accent/15 to-accent/[0.02] text-accent";
+  return (
+    <section className="rounded-xl border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+      <div className={`flex items-start gap-3 p-5 bg-gradient-to-br ${toneClass} border-b border-border`}>
+        <div className={`h-10 w-10 rounded-lg bg-background flex items-center justify-center shrink-0 shadow-sm`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="font-display font-bold text-foreground">{title}</h2>
+          {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+        </div>
+      </div>
+      <div className="p-6">{children}</div>
+    </section>
+  );
+}
+
