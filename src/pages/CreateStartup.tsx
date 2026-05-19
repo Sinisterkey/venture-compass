@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { safeErrorMessage } from "@/lib/errors";
-import { Loader2, Upload, FileCheck, ArrowLeft } from "lucide-react";
+import { Loader2, Upload, FileCheck, ArrowLeft, Rocket, Lightbulb, Coins, TrendingUp, ImageIcon, GraduationCap, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -132,25 +132,38 @@ export default function CreateStartup() {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1">
-        <div className="border-b border-border bg-muted/30">
-          <div className="container py-6">
-            <Link to="/dashboard" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3">
+        {/* Hero header */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-accent text-primary-foreground">
+          <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_20%_30%,white_1px,transparent_1px),radial-gradient(circle_at_80%_70%,white_1px,transparent_1px)] [background-size:32px_32px,40px_40px]" />
+          <div className="container relative py-10">
+            <Link to="/dashboard" className="inline-flex items-center gap-1 text-sm text-primary-foreground/80 hover:text-primary-foreground mb-4">
               <ArrowLeft className="h-4 w-4" /> Back to Dashboard
             </Link>
-            <h1 className="font-display text-2xl font-bold text-foreground">Create Startup</h1>
-            <p className="text-sm text-muted-foreground mt-1">Add your venture to get discovered by investors and mentors</p>
+            <div className="flex items-start gap-4">
+              <div className="h-14 w-14 rounded-2xl bg-primary-foreground/15 backdrop-blur flex items-center justify-center shrink-0">
+                <Rocket className="h-7 w-7" />
+              </div>
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-medium bg-primary-foreground/15 backdrop-blur rounded-full px-3 py-1 mb-2">
+                  <Sparkles className="h-3 w-3" /> Launch your venture
+                </div>
+                <h1 className="font-display text-3xl md:text-4xl font-bold mb-1">Tell us about your startup</h1>
+                <p className="text-sm text-primary-foreground/80 max-w-xl">
+                  Shape your story so investors and mentors can find you. You can save and come back anytime.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="container py-6">
-          <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+        <div className="container py-8">
+          <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-5">
             {/* Basic Info */}
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="font-display font-semibold text-foreground mb-4">Basic Information</h2>
+            <SectionCard icon={Rocket} title="The basics" subtitle="A name and a one-liner is enough to start." tone="primary">
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="name">Startup Name *</Label>
-                  <Input id="name" value={form.name} onChange={(e) => update("name", e.target.value)} required className="mt-1.5" />
+                  <Input id="name" value={form.name} onChange={(e) => update("name", e.target.value)} required className="mt-1.5" placeholder="e.g. Kalulu AgriTech" />
                 </div>
                 <div>
                   <Label htmlFor="description">Description</Label>
