@@ -279,24 +279,57 @@ export default function Discover() {
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                   {paginated.map((s) => (
-                    <Link to={`/ventures/${s.id}`} key={s.id} className="group flex flex-col p-5 rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-md transition-all">
-                      <div className="flex items-start gap-3 mb-3">
-                        <VentureLogo logo={s.logo_url} name={s.name} size="lg" />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-display font-semibold text-foreground truncate group-hover:text-primary transition-colors">{s.name}</p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><MapPin className="h-3 w-3" />{s.location}</p>
+                    <Link
+                      to={`/ventures/${s.id}`}
+                      key={s.id}
+                      className="group relative flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:border-primary/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-200"
+                    >
+                      {/* Gradient header strip */}
+                      <div className="relative h-20 bg-gradient-to-br from-primary/90 via-primary to-accent overflow-hidden">
+                        <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_20%_20%,white_1px,transparent_1px)] [background-size:14px_14px]" />
+                        <div className="absolute top-3 right-3 flex gap-1.5">
+                          {s.source === "live" && (
+                            <Badge className="bg-background/90 text-foreground hover:bg-background border-0 text-[10px] gap-1">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
+                            </Badge>
+                          )}
+                          {s.university && (
+                            <Badge className="bg-background/90 text-foreground hover:bg-background border-0 text-[10px] gap-1">
+                              <GraduationCap className="h-3 w-3 text-primary" /> University
+                            </Badge>
+                          )}
                         </div>
-                        {s.source === "live" && <Badge variant="outline" className="text-[10px] gap-1 border-primary/30 text-primary shrink-0">Live</Badge>}
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-3 mb-4 flex-1">{s.description}</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        <Badge variant="secondary" className="text-xs">{s.industry}</Badge>
-                        <Badge variant="outline" className="text-xs capitalize">{s.stage}</Badge>
-                        {s.university && (
-                          <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary"><GraduationCap className="h-3 w-3" /></Badge>
-                        )}
+
+                      {/* Floating logo */}
+                      <div className="px-5 -mt-8 relative">
+                        <div className="h-16 w-16 rounded-xl bg-card ring-4 ring-card shadow-md overflow-hidden flex items-center justify-center">
+                          {s.logo_url ? (
+                            <img src={s.logo_url} alt={s.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full bg-gradient-to-br from-primary/20 to-accent/20 text-primary flex items-center justify-center font-display font-bold text-2xl">
+                              {s.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="p-5 pt-3 flex flex-col flex-1">
+                        <p className="font-display font-bold text-lg text-foreground truncate group-hover:text-primary transition-colors">
+                          {s.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 mb-3">
+                          <MapPin className="h-3 w-3" />{s.location}
+                        </p>
+                        <p className="text-sm text-muted-foreground line-clamp-3 mb-4 flex-1 leading-relaxed">
+                          {s.description}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5 pt-3 border-t border-border/60">
+                          <Badge variant="secondary" className="text-xs font-medium">{s.industry}</Badge>
+                          <Badge variant="outline" className="text-xs capitalize border-primary/30 text-primary">{s.stage}</Badge>
+                        </div>
                       </div>
                     </Link>
                   ))}
