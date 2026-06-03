@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
+import { fundingStageLabel } from "@/lib/labels";
 
 type VerificationRequest = Database["public"]["Tables"]["verification_requests"]["Row"];
 type Startup = Database["public"]["Tables"]["startups"]["Row"];
@@ -281,7 +282,7 @@ export default function Admin() {
                           <p className="text-xs text-muted-foreground truncate">{s.description}</p>
                         </div>
                         <div className="col-span-2 text-sm text-muted-foreground">{s.industry || "—"}</div>
-                        <div className="col-span-2 text-sm text-muted-foreground">{s.funding_stage?.replace("_", " ") || "—"}</div>
+                        <div className="col-span-2 text-sm text-muted-foreground">{fundingStageLabel(s.funding_stage)}</div>
                         <div className="col-span-2">
                           <Badge variant={s.is_published ? "default" : "secondary"} className="text-xs">
                             {s.is_published ? "Published" : "Draft"}

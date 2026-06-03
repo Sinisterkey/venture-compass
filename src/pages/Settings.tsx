@@ -12,13 +12,15 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { safeErrorMessage } from "@/lib/errors";
-import { User, Shield, Camera, Save, Loader2, Filter } from "lucide-react";
+import { User, Shield, Camera, Save, Loader2, Filter, Globe } from "lucide-react";
+import { CurrencySwitcher } from "@/components/CurrencySwitcher";
+import { FUNDING_STAGE_OPTIONS } from "@/lib/labels";
 
 const INDUSTRIES = ["AgriTech","FinTech","EdTech","HealthTech","CleanTech","Logistics","E-commerce","AI/ML","PropTech","InsurTech"];
-const STAGES = ["pre_seed","seed","series_a","series_b_plus"];
+const STAGES = FUNDING_STAGE_OPTIONS.map((o) => o.value);
 const CATEGORIES = ["Hardware","Software","Marketplace","Research","Social Impact","Sustainability","Mobile App","Platform"];
 
-function ChipSelect({ options, selected, onToggle }: { options: string[]; selected: string[]; onToggle: (v: string) => void }) {
+function ChipSelect({ options, selected, onToggle, labelFor }: { options: string[]; selected: string[]; onToggle: (v: string) => void; labelFor?: (v: string) => string }) {
   return (
     <div className="flex flex-wrap gap-2 mt-1.5">
       {options.map((o) => {
@@ -31,7 +33,7 @@ function ChipSelect({ options, selected, onToggle }: { options: string[]; select
             className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
               active ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:border-primary/40"
             }`}
-          >{o}</button>
+          >{labelFor ? labelFor(o) : o}</button>
         );
       })}
     </div>
@@ -168,24 +170,48 @@ export default function Settings() {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please choose an image (JPG, PNG, WebP).", variant: "destructive" });
+      return;
+    }
     if (file.size > 2 * 1024 * 1024) {
       toast({ title: "File too large", description: "Max 2MB", variant: "destructive" });
       return;
     }
     setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `${user.id}/avatar.${ext}`;
-    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-    if (uploadError) {
-      toast({ title: "Upload failed", description: safeErrorMessage(uploadError), variant: "destructive" });
+    try {
+      const ext = (file.name.split(".").pop() || file.type.split("/")[1] || "jpg")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 5) || "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, {
+          upsert: true,
+          contentType: file.type || "image/jpeg",
+          cacheControl: "3600",
+        });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      const bustedUrl = `${publicUrl}?v=${Date.now()}`;
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: bustedUrl })
+        .eq("user_id", user.id);
+      if (profileError) throw profileError;
+      toast({ title: "Profile photo updated" });
+      window.location.reload();
+    } catch (err: any) {
+      console.error("[avatar upload]", err);
+      toast({
+        title: "Upload failed",
+        description: err?.message || "Could not upload your photo. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setUploading(false);
-      return;
     }
-    const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
-    await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("user_id", user.id);
-    toast({ title: "Avatar updated" });
-    setUploading(false);
-    window.location.reload();
   };
 
   const handleChangePassword = async () => {
@@ -295,6 +321,21 @@ export default function Settings() {
                     </div>
                   </div>
 
+                  {/* Display preferences */}
+                  <div className="rounded-lg border border-border bg-card p-6">
+                    <h2 className="font-display font-semibold text-foreground mb-1 flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-primary" /> Display preferences
+                    </h2>
+                    <p className="text-xs text-muted-foreground mb-4">Choose the currency used across the site.</p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Currency</p>
+                        <p className="text-xs text-muted-foreground">Funding amounts will show in this currency.</p>
+                      </div>
+                      <CurrencySwitcher compact />
+                    </div>
+                  </div>
+
                   {/* Profile details */}
                   <div className="rounded-lg border border-border bg-card p-6">
                     <h2 className="font-display font-semibold text-foreground mb-4">Personal Information</h2>
@@ -350,7 +391,7 @@ export default function Settings() {
                         </div>
                         <div>
                           <Label>Preferred startup stages</Label>
-                          <ChipSelect options={STAGES} selected={investorPrefs.preferred_stages} onToggle={(v) => setInvestorPrefs({ ...investorPrefs, preferred_stages: toggleArr(investorPrefs.preferred_stages, v) })} />
+                          <ChipSelect options={STAGES} selected={investorPrefs.preferred_stages} labelFor={(v) => FUNDING_STAGE_OPTIONS.find((o) => o.value === v)?.label || v} onToggle={(v) => setInvestorPrefs({ ...investorPrefs, preferred_stages: toggleArr(investorPrefs.preferred_stages, v) })} />
                         </div>
                         <div>
                           <Label>Innovation categories</Label>

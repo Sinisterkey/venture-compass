@@ -12,6 +12,7 @@ import { RequestCollaborationDialog } from "@/components/RequestCollaborationDia
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useToast } from "@/hooks/use-toast";
+import { stageLabel } from "@/lib/labels";
 
 export default function VentureDetail() {
   const { id } = useParams<{ id: string }>();
@@ -122,7 +123,7 @@ export default function VentureDetail() {
                     <div className="flex flex-wrap items-center gap-2">
                       {v.industry && <Badge variant="secondary">{v.industry}</Badge>}
                       {v.innovation_category && <Badge variant="outline">{v.innovation_category}</Badge>}
-                      <Badge variant="outline" className="capitalize">{v.stage}</Badge>
+                      <Badge variant="outline">{stageLabel(v.stage)}</Badge>
                       {v.isDraft && isOwner && <Badge variant="destructive">Draft (only you can see this)</Badge>}
                       {v.university && (
                         <Badge variant="outline" className="gap-1 border-primary/30 text-primary">

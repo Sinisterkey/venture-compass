@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Rocket, LogOut, Settings, Shield, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { CurrencySwitcher } from "@/components/CurrencySwitcher";
 
 const baseLinks = [
   { label: "Home", path: "/" },
@@ -78,7 +77,6 @@ export function Navbar() {
 
         {/* Desktop Auth */}
         <div className="hidden md:flex items-center gap-3">
-          <CurrencySwitcher compact />
           {!loading && isLoggedIn ? (
             <>
               <Button variant="ghost" size="sm" asChild>
@@ -146,7 +144,6 @@ export function Navbar() {
               </>
             )}
             <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border">
-              <CurrencySwitcher compact />
               {isLoggedIn ? (
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => { signOut(); setMobileOpen(false); }}>
                   Sign out

@@ -18,6 +18,7 @@ import {
   type RecommendedStartup,
 } from "@/lib/recommendations";
 import { SchedulePitchSessionDialog } from "@/components/SchedulePitchSessionDialog";
+import { maturityLabel } from "@/lib/labels";
 
 type Startup = Database["public"]["Tables"]["startups"]["Row"];
 
@@ -225,7 +226,7 @@ export default function Dashboard() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <Link to={`/ventures/${s.id}`} className="text-sm font-medium text-foreground hover:text-primary">{s.name}</Link>
                                 <Badge variant={s.is_published ? "default" : "secondary"} className="text-xs">{s.is_published ? "Published" : "Draft"}</Badge>
-                                {s.current_stage && <Badge variant="outline" className="text-xs capitalize">{s.current_stage}</Badge>}
+                                {s.current_stage && <Badge variant="outline" className="text-xs">{maturityLabel(s.current_stage)}</Badge>}
                                 {s.is_university_project && (
                                   <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary">
                                     <GraduationCap className="h-3 w-3" />
@@ -315,7 +316,7 @@ export default function Dashboard() {
                                 <p className="text-sm font-medium text-foreground">{s.name}</p>
                                 <div className="flex flex-wrap gap-1 mt-1">
                                   {s.industry && <Badge variant="secondary" className="text-xs">{s.industry}</Badge>}
-                                  {s.current_stage && <Badge variant="outline" className="text-xs capitalize">{s.current_stage}</Badge>}
+                                  {s.current_stage && <Badge variant="outline" className="text-xs">{maturityLabel(s.current_stage)}</Badge>}
                                 </div>
                                 {s.match_reasons.length > 0 && (
                                   <p className="text-xs text-muted-foreground mt-1.5">{s.match_reasons.join(" · ")}</p>

@@ -219,10 +219,10 @@ export default function CreateStartup() {
                   <Select value={form.funding_stage} onValueChange={(v) => update("funding_stage", v)}>
                     <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select stage" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pre_seed">Pre-Seed</SelectItem>
-                      <SelectItem value="seed">Seed</SelectItem>
-                      <SelectItem value="series_a">Series A</SelectItem>
-                      <SelectItem value="series_b_plus">Series B+</SelectItem>
+                      <SelectItem value="pre_seed">Just starting out</SelectItem>
+                      <SelectItem value="seed">Early funding</SelectItem>
+                      <SelectItem value="series_a">Growing fast</SelectItem>
+                      <SelectItem value="series_b_plus">Scaling up</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -241,11 +241,11 @@ export default function CreateStartup() {
                   <Select value={form.current_stage} onValueChange={(v) => update("current_stage", v)}>
                     <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="idea">Idea Stage</SelectItem>
-                      <SelectItem value="prototype">Prototype Stage</SelectItem>
-                      <SelectItem value="mvp">MVP Stage</SelectItem>
-                      <SelectItem value="pilot">Pilot Testing</SelectItem>
-                      <SelectItem value="revenue">Revenue Generating</SelectItem>
+                      <SelectItem value="idea">Just an idea</SelectItem>
+                      <SelectItem value="prototype">Building a prototype</SelectItem>
+                      <SelectItem value="mvp">Working product</SelectItem>
+                      <SelectItem value="pilot">Testing with real users</SelectItem>
+                      <SelectItem value="revenue">Earning income</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

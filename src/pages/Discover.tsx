@@ -12,8 +12,10 @@ import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
+import { stageLabel, STARTUP_MATURITY_OPTIONS } from "@/lib/labels";
+
 const INDUSTRIES = ["AgriTech", "FinTech", "EdTech", "HealthTech", "CleanTech", "Logistics", "E-commerce", "AI/ML", "PropTech", "InsurTech"];
-const STAGES = ["idea", "prototype", "mvp", "pilot", "revenue", "Pre-Seed", "Seed", "Series A", "Series B+"];
+const STAGES = STARTUP_MATURITY_OPTIONS;
 const COUNTRIES = ["Zambia", "Nigeria", "Kenya", "Ghana", "Rwanda", "Tanzania", "South Africa", "Uganda"];
 
 type SortKey = "newest" | "name" | "stage";
@@ -128,9 +130,9 @@ export default function Discover() {
         <h4 className="font-display font-semibold text-xs uppercase tracking-wider text-muted-foreground mb-3">Stage</h4>
         <div className="space-y-2">
           {STAGES.map((stage) => (
-            <label key={stage} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer capitalize">
-              <Checkbox checked={selectedStages.includes(stage)} onCheckedChange={() => toggleFilter(selectedStages, setSelectedStages, stage)} />
-              {stage}
+            <label key={stage.value} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
+              <Checkbox checked={selectedStages.includes(stage.value)} onCheckedChange={() => toggleFilter(selectedStages, setSelectedStages, stage.value)} />
+              {stage.label}
             </label>
           ))}
         </div>
@@ -267,7 +269,7 @@ export default function Discover() {
                       </div>
                       <div className="col-span-2 flex items-center"><Badge variant="secondary" className="text-xs font-normal">{s.industry}</Badge></div>
                       <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3 shrink-0" />{s.location}</div>
-                      <div className="col-span-2 flex items-center text-xs text-muted-foreground capitalize">{s.stage}</div>
+                      <div className="col-span-2 flex items-center text-xs text-muted-foreground">{stageLabel(s.stage)}</div>
                       <div className="col-span-2 flex items-center">
                         {s.university ? (
                           <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary"><GraduationCap className="h-3 w-3" /> {s.university}</Badge>
@@ -328,7 +330,7 @@ export default function Discover() {
                         </p>
                         <div className="flex flex-wrap gap-1.5 pt-3 border-t border-border/60">
                           <Badge variant="secondary" className="text-xs font-medium">{s.industry}</Badge>
-                          <Badge variant="outline" className="text-xs capitalize border-primary/30 text-primary">{s.stage}</Badge>
+                          <Badge variant="outline" className="text-xs border-primary/30 text-primary">{stageLabel(s.stage)}</Badge>
                         </div>
                       </div>
                     </Link>

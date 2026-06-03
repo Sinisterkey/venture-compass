@@ -1,12 +1,6 @@
-import { CheckCircle2 } from "lucide-react";
+import { STARTUP_MATURITY_OPTIONS } from "@/lib/labels";
 
-const STAGES: { value: string; label: string }[] = [
-  { value: "idea", label: "Idea" },
-  { value: "prototype", label: "Prototype" },
-  { value: "mvp", label: "MVP" },
-  { value: "pilot", label: "Pilot" },
-  { value: "revenue", label: "Revenue" },
-];
+const STAGES = STARTUP_MATURITY_OPTIONS;
 
 export function StageProgress({ stage }: { stage?: string | null }) {
   const idx = Math.max(0, STAGES.findIndex((s) => s.value === stage));
@@ -28,7 +22,7 @@ export function StageProgress({ stage }: { stage?: string | null }) {
       </div>
       <div className="grid grid-cols-5 gap-1.5 mt-2">
         {STAGES.map((s, i) => (
-          <div key={s.value} className="text-[10px] uppercase tracking-wider text-center">
+          <div key={s.value} className="text-[10px] text-center leading-tight">
             <span className={i <= idx ? "text-foreground font-medium" : "text-muted-foreground"}>
               {s.label}
             </span>
