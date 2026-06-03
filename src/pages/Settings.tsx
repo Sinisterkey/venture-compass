@@ -20,7 +20,7 @@ const INDUSTRIES = ["AgriTech","FinTech","EdTech","HealthTech","CleanTech","Logi
 const STAGES = FUNDING_STAGE_OPTIONS.map((o) => o.value);
 const CATEGORIES = ["Hardware","Software","Marketplace","Research","Social Impact","Sustainability","Mobile App","Platform"];
 
-function ChipSelect({ options, selected, onToggle }: { options: string[]; selected: string[]; onToggle: (v: string) => void }) {
+function ChipSelect({ options, selected, onToggle, labelFor }: { options: string[]; selected: string[]; onToggle: (v: string) => void; labelFor?: (v: string) => string }) {
   return (
     <div className="flex flex-wrap gap-2 mt-1.5">
       {options.map((o) => {
@@ -33,7 +33,7 @@ function ChipSelect({ options, selected, onToggle }: { options: string[]; select
             className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
               active ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:border-primary/40"
             }`}
-          >{o}</button>
+          >{labelFor ? labelFor(o) : o}</button>
         );
       })}
     </div>
@@ -391,7 +391,7 @@ export default function Settings() {
                         </div>
                         <div>
                           <Label>Preferred startup stages</Label>
-                          <ChipSelect options={STAGES} selected={investorPrefs.preferred_stages} onToggle={(v) => setInvestorPrefs({ ...investorPrefs, preferred_stages: toggleArr(investorPrefs.preferred_stages, v) })} />
+                          <ChipSelect options={STAGES} selected={investorPrefs.preferred_stages} labelFor={(v) => FUNDING_STAGE_OPTIONS.find((o) => o.value === v)?.label || v} onToggle={(v) => setInvestorPrefs({ ...investorPrefs, preferred_stages: toggleArr(investorPrefs.preferred_stages, v) })} />
                         </div>
                         <div>
                           <Label>Innovation categories</Label>
