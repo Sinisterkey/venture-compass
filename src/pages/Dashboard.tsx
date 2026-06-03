@@ -18,6 +18,7 @@ import {
   type RecommendedStartup,
 } from "@/lib/recommendations";
 import { SchedulePitchSessionDialog } from "@/components/SchedulePitchSessionDialog";
+import { maturityLabel } from "@/lib/labels";
 
 type Startup = Database["public"]["Tables"]["startups"]["Row"];
 
