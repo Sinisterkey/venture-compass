@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
+import { fundingStageLabel } from "@/lib/labels";
 
 type VerificationRequest = Database["public"]["Tables"]["verification_requests"]["Row"];
 type Startup = Database["public"]["Tables"]["startups"]["Row"];
