@@ -168,24 +168,48 @@ export default function Settings() {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please choose an image (JPG, PNG, WebP).", variant: "destructive" });
+      return;
+    }
     if (file.size > 2 * 1024 * 1024) {
       toast({ title: "File too large", description: "Max 2MB", variant: "destructive" });
       return;
     }
     setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `${user.id}/avatar.${ext}`;
-    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-    if (uploadError) {
-      toast({ title: "Upload failed", description: safeErrorMessage(uploadError), variant: "destructive" });
+    try {
+      const ext = (file.name.split(".").pop() || file.type.split("/")[1] || "jpg")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 5) || "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, {
+          upsert: true,
+          contentType: file.type || "image/jpeg",
+          cacheControl: "3600",
+        });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      const bustedUrl = `${publicUrl}?v=${Date.now()}`;
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: bustedUrl })
+        .eq("user_id", user.id);
+      if (profileError) throw profileError;
+      toast({ title: "Profile photo updated" });
+      window.location.reload();
+    } catch (err: any) {
+      console.error("[avatar upload]", err);
+      toast({
+        title: "Upload failed",
+        description: err?.message || "Could not upload your photo. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setUploading(false);
-      return;
     }
-    const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
-    await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("user_id", user.id);
-    toast({ title: "Avatar updated" });
-    setUploading(false);
-    window.location.reload();
   };
 
   const handleChangePassword = async () => {
