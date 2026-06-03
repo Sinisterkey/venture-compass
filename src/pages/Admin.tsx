@@ -281,7 +281,7 @@ export default function Admin() {
                           <p className="text-xs text-muted-foreground truncate">{s.description}</p>
                         </div>
                         <div className="col-span-2 text-sm text-muted-foreground">{s.industry || "—"}</div>
-                        <div className="col-span-2 text-sm text-muted-foreground">{s.funding_stage?.replace("_", " ") || "—"}</div>
+                        <div className="col-span-2 text-sm text-muted-foreground">{fundingStageLabel(s.funding_stage)}</div>
                         <div className="col-span-2">
                           <Badge variant={s.is_published ? "default" : "secondary"} className="text-xs">
                             {s.is_published ? "Published" : "Draft"}
