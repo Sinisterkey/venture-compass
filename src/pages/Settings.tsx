@@ -12,10 +12,12 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { safeErrorMessage } from "@/lib/errors";
-import { User, Shield, Camera, Save, Loader2, Filter } from "lucide-react";
+import { User, Shield, Camera, Save, Loader2, Filter, Globe } from "lucide-react";
+import { CurrencySwitcher } from "@/components/CurrencySwitcher";
+import { FUNDING_STAGE_OPTIONS } from "@/lib/labels";
 
 const INDUSTRIES = ["AgriTech","FinTech","EdTech","HealthTech","CleanTech","Logistics","E-commerce","AI/ML","PropTech","InsurTech"];
-const STAGES = ["pre_seed","seed","series_a","series_b_plus"];
+const STAGES = FUNDING_STAGE_OPTIONS.map((o) => o.value);
 const CATEGORIES = ["Hardware","Software","Marketplace","Research","Social Impact","Sustainability","Mobile App","Platform"];
 
 function ChipSelect({ options, selected, onToggle }: { options: string[]; selected: string[]; onToggle: (v: string) => void }) {
@@ -316,6 +318,21 @@ export default function Settings() {
                           ))}
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Display preferences */}
+                  <div className="rounded-lg border border-border bg-card p-6">
+                    <h2 className="font-display font-semibold text-foreground mb-1 flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-primary" /> Display preferences
+                    </h2>
+                    <p className="text-xs text-muted-foreground mb-4">Choose the currency used across the site.</p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Currency</p>
+                        <p className="text-xs text-muted-foreground">Funding amounts will show in this currency.</p>
+                      </div>
+                      <CurrencySwitcher compact />
                     </div>
                   </div>
 
