@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, MapPin, GraduationCap } from "lucide-react";
+import { ArrowRight, MapPin, GraduationCap, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { stageLabel } from "@/lib/labels";
 
 interface Venture {
   id: string;
@@ -33,71 +34,65 @@ export function FeaturedStartups() {
   }, []);
 
   return (
-    <section className="py-16 bg-background">
+    <section className="py-20 bg-background">
       <div className="container">
-        <div className="flex items-end justify-between mb-8">
+        <div className="flex items-end justify-between mb-10">
           <div>
+            <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary mb-2">
+              <Rocket className="h-4 w-4" /> Featured ventures
+            </div>
             <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">
-              Ventures directory
+              Startups solving real African problems
             </h2>
-            <p className="text-muted-foreground text-sm mt-1">Discover innovative startups from across the continent</p>
+            <p className="text-muted-foreground text-sm mt-1.5">Discover innovative ideas from student and independent founders</p>
           </div>
-          <Button variant="ghost" className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-primary" asChild>
+          <Button variant="ghost" className="hidden md:flex items-center gap-2 text-sm" asChild>
             <Link to="/discover">View all <ArrowRight className="h-4 w-4" /></Link>
           </Button>
         </div>
 
-        <div className="border border-border rounded-lg overflow-hidden bg-card">
-          <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-muted/60 text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-border">
-            <div className="col-span-4">Venture</div>
-            <div className="col-span-2">Industry</div>
-            <div className="col-span-2">Location</div>
-            <div className="col-span-2">Stage</div>
-            <div className="col-span-2">Status</div>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}
           </div>
-
-          {loading
-            ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="px-5 py-4 border-b border-border last:border-0">
-                  <Skeleton className="h-5 w-1/2 mb-2" />
-                  <Skeleton className="h-3 w-3/4" />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {startups.map((s) => (
+              <Link
+                to={`/ventures/${s.id}`}
+                key={s.id}
+                className="group relative flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+              >
+                <div className="relative h-14 bg-gradient-to-br from-primary/90 via-primary to-accent">
+                  <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_20%_20%,white_1px,transparent_1px)] [background-size:14px_14px]" />
                 </div>
-              ))
-            : startups.map((startup, i) => (
-                <Link
-                  to={`/ventures/${startup.id}`}
-                  key={startup.id}
-                  className={`grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-4 hover:bg-muted/30 transition-colors ${
-                    i < startups.length - 1 ? "border-b border-border" : ""
-                  }`}
-                >
-                  <div className="col-span-4">
-                    <p className="font-medium text-sm text-foreground">{startup.name}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{startup.description}</p>
+                <div className="px-5 -mt-6 relative">
+                  <div className="h-12 w-12 rounded-xl bg-card ring-4 ring-card shadow-sm flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 text-primary font-display font-bold text-xl">
+                    {s.name.charAt(0).toUpperCase()}
                   </div>
-                  <div className="col-span-2 flex items-center">
-                    <Badge variant="secondary" className="text-xs font-normal">{startup.industry}</Badge>
-                  </div>
-                  <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3 shrink-0" />{startup.location}
-                  </div>
-                  <div className="col-span-2 flex items-center">
-                    <span className="text-xs text-muted-foreground">{startup.stage}</span>
-                  </div>
-                  <div className="col-span-2 flex items-center">
-                    {startup.university ? (
-                      <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary">
-                        <GraduationCap className="h-3 w-3" /> {startup.university}
+                </div>
+                <div className="p-5 pt-3 flex flex-col flex-1">
+                  <p className="font-display font-semibold text-foreground text-base truncate group-hover:text-primary transition-colors">{s.name}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1 mb-2">
+                    <MapPin className="h-3 w-3" />{s.location}
+                  </p>
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3 flex-1 leading-relaxed">{s.description}</p>
+                  <div className="flex flex-wrap gap-1.5 pt-3 border-t border-border/60">
+                    <Badge variant="secondary" className="text-[10px] font-medium">{s.industry}</Badge>
+                    <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">{stageLabel(s.stage)}</Badge>
+                    {s.university && (
+                      <Badge variant="outline" className="text-[10px] gap-1 border-accent/40 text-accent">
+                        <GraduationCap className="h-2.5 w-2.5" /> University
                       </Badge>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Independent</span>
                     )}
                   </div>
-                </Link>
-              ))}
-        </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
 
-        <div className="mt-4 md:hidden">
+        <div className="mt-6 md:hidden">
           <Button variant="outline" className="w-full text-sm" asChild>
             <Link to="/discover">View all ventures <ArrowRight className="h-4 w-4 ml-2" /></Link>
           </Button>
