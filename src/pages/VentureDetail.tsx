@@ -212,6 +212,19 @@ export default function VentureDetail() {
                       <Handshake className="h-4 w-4" /> Request Collaboration
                     </Button>
                   )}
+                  {startup && isInvestor && !isOwner && (
+                    <>
+                      <Button onClick={toggleLike} variant={liked ? "default" : "outline"} className="gap-2">
+                        <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} /> {liked ? "Liked" : "Like"} {likeCount > 0 && <span className="text-xs opacity-80">· {likeCount}</span>}
+                      </Button>
+                      <Button onClick={toggleBookmark} variant={bookmarked ? "default" : "outline"} className="gap-2">
+                        <Bookmark className={`h-4 w-4 ${bookmarked ? "fill-current" : ""}`} /> {bookmarked ? "Saved" : "Bookmark"}
+                      </Button>
+                      <Button onClick={() => setMessageOpen(true)} variant="outline" className="gap-2">
+                        <MessageSquare className="h-4 w-4" /> Message Founder
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -282,14 +295,23 @@ export default function VentureDetail() {
       </main>
       <Footer />
       {startup && (
-        <RequestCollaborationDialog
-          open={collabOpen}
-          onOpenChange={setCollabOpen}
-          startupId={startup.id}
-          founderId={startup.founder_id}
-          startupName={startup.name}
-          defaultRequestType={collabDefault}
-        />
+        <>
+          <RequestCollaborationDialog
+            open={collabOpen}
+            onOpenChange={setCollabOpen}
+            startupId={startup.id}
+            founderId={startup.founder_id}
+            startupName={startup.name}
+            defaultRequestType={collabDefault}
+          />
+          <SendMessageDialog
+            open={messageOpen}
+            onOpenChange={setMessageOpen}
+            startupId={startup.id}
+            founderId={startup.founder_id}
+            startupName={startup.name}
+          />
+        </>
       )}
     </div>
   );
