@@ -241,6 +241,45 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read_at: string | null
+          recipient_id: string
+          startup_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          actor_id?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          recipient_id: string
+          startup_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          actor_id?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          startup_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       pitch_sessions: {
         Row: {
           collaboration_request_id: string | null
@@ -283,6 +322,30 @@ export type Database = {
           startup_id?: string
           status?: Database["public"]["Enums"]["pitch_session_status"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      profile_views: {
+        Row: {
+          created_at: string
+          founder_id: string
+          id: string
+          startup_id: string
+          viewer_id: string
+        }
+        Insert: {
+          created_at?: string
+          founder_id: string
+          id?: string
+          startup_id: string
+          viewer_id: string
+        }
+        Update: {
+          created_at?: string
+          founder_id?: string
+          id?: string
+          startup_id?: string
+          viewer_id?: string
         }
         Relationships: []
       }
@@ -415,6 +478,81 @@ export type Database = {
           target_market?: string | null
           university?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      startup_bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          startup_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          startup_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          startup_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      startup_likes: {
+        Row: {
+          created_at: string
+          id: string
+          startup_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          startup_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          startup_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      startup_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          read_at: string | null
+          recipient_id: string
+          sender_id: string
+          startup_id: string
+          subject: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id: string
+          sender_id: string
+          startup_id: string
+          subject?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id?: string
+          sender_id?: string
+          startup_id?: string
+          subject?: string | null
         }
         Relationships: []
       }
