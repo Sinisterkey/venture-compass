@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, GraduationCap, Globe, Target, Briefcase, TrendingUp, DollarSign, Lightbulb, Handshake, FileText, Video, CheckCircle2, Download, ExternalLink } from "lucide-react";
+import { ArrowLeft, MapPin, GraduationCap, Globe, Target, Briefcase, TrendingUp, DollarSign, Lightbulb, Handshake, FileText, Video, CheckCircle2, ExternalLink, Heart, Bookmark, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StageProgress } from "@/components/StageProgress";
 import { RequestCollaborationDialog } from "@/components/RequestCollaborationDialog";
+import { SendMessageDialog } from "@/components/SendMessageDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useToast } from "@/hooks/use-toast";
@@ -26,8 +27,13 @@ export default function VentureDetail() {
   const [collabOpen, setCollabOpen] = useState(false);
   const [collabDefault, setCollabDefault] = useState<string | undefined>(undefined);
   const [openingDeck, setOpeningDeck] = useState(false);
+  const [messageOpen, setMessageOpen] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
 
   const canRequest = !!user && (roles.includes("investor") || roles.includes("mentor"));
+  const isInvestor = !!user && roles.includes("investor");
 
   useEffect(() => {
     if (!id) return;
@@ -39,8 +45,50 @@ export default function VentureDetail() {
       setVenture(showcaseRes.data);
       setStartup(startupRes.data);
       setLoading(false);
+
+      if (startupRes.data && user && startupRes.data.founder_id !== user.id) {
+        // Track profile view (founder is notified via DB trigger w/ 6h throttle)
+        await supabase.from("profile_views").insert({
+          startup_id: startupRes.data.id,
+          founder_id: startupRes.data.founder_id,
+          viewer_id: user.id,
+        });
+      }
+
+      if (startupRes.data) {
+        const [{ count }, likeRow, bmRow] = await Promise.all([
+          supabase.from("startup_likes").select("*", { count: "exact", head: true }).eq("startup_id", startupRes.data.id),
+          user ? supabase.from("startup_likes").select("id").eq("startup_id", startupRes.data.id).eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null } as any),
+          user ? supabase.from("startup_bookmarks").select("id").eq("startup_id", startupRes.data.id).eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null } as any),
+        ]);
+        setLikeCount(count || 0);
+        setLiked(!!likeRow?.data);
+        setBookmarked(!!bmRow?.data);
+      }
     })();
-  }, [id]);
+  }, [id, user]);
+
+  const toggleLike = async () => {
+    if (!user || !startup) return;
+    if (liked) {
+      await supabase.from("startup_likes").delete().eq("startup_id", startup.id).eq("user_id", user.id);
+      setLiked(false); setLikeCount((c) => Math.max(0, c - 1));
+    } else {
+      const { error } = await supabase.from("startup_likes").insert({ startup_id: startup.id, user_id: user.id });
+      if (!error) { setLiked(true); setLikeCount((c) => c + 1); toast({ title: "Liked" }); }
+    }
+  };
+
+  const toggleBookmark = async () => {
+    if (!user || !startup) return;
+    if (bookmarked) {
+      await supabase.from("startup_bookmarks").delete().eq("startup_id", startup.id).eq("user_id", user.id);
+      setBookmarked(false); toast({ title: "Removed from saved" });
+    } else {
+      const { error } = await supabase.from("startup_bookmarks").insert({ startup_id: startup.id, user_id: user.id });
+      if (!error) { setBookmarked(true); toast({ title: "Saved", description: "Added to your bookmarks." }); }
+    }
+  };
 
   const openPitchDeck = async () => {
     if (!startup?.pitch_deck_url) return;
@@ -164,6 +212,19 @@ export default function VentureDetail() {
                       <Handshake className="h-4 w-4" /> Request Collaboration
                     </Button>
                   )}
+                  {startup && isInvestor && !isOwner && (
+                    <>
+                      <Button onClick={toggleLike} variant={liked ? "default" : "outline"} className="gap-2">
+                        <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} /> {liked ? "Liked" : "Like"} {likeCount > 0 && <span className="text-xs opacity-80">· {likeCount}</span>}
+                      </Button>
+                      <Button onClick={toggleBookmark} variant={bookmarked ? "default" : "outline"} className="gap-2">
+                        <Bookmark className={`h-4 w-4 ${bookmarked ? "fill-current" : ""}`} /> {bookmarked ? "Saved" : "Bookmark"}
+                      </Button>
+                      <Button onClick={() => setMessageOpen(true)} variant="outline" className="gap-2">
+                        <MessageSquare className="h-4 w-4" /> Message Founder
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -234,14 +295,23 @@ export default function VentureDetail() {
       </main>
       <Footer />
       {startup && (
-        <RequestCollaborationDialog
-          open={collabOpen}
-          onOpenChange={setCollabOpen}
-          startupId={startup.id}
-          founderId={startup.founder_id}
-          startupName={startup.name}
-          defaultRequestType={collabDefault}
-        />
+        <>
+          <RequestCollaborationDialog
+            open={collabOpen}
+            onOpenChange={setCollabOpen}
+            startupId={startup.id}
+            founderId={startup.founder_id}
+            startupName={startup.name}
+            defaultRequestType={collabDefault}
+          />
+          <SendMessageDialog
+            open={messageOpen}
+            onOpenChange={setMessageOpen}
+            startupId={startup.id}
+            founderId={startup.founder_id}
+            startupName={startup.name}
+          />
+        </>
       )}
     </div>
   );

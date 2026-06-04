@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Rocket, LogOut, Settings, Shield, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 const baseLinks = [
   { label: "Home", path: "/" },
@@ -79,6 +80,7 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           {!loading && isLoggedIn ? (
             <>
+              <NotificationsBell />
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/settings" className="gap-2">
                   <Settings className="h-4 w-4" /> Settings
