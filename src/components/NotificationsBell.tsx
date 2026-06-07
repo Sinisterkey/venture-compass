@@ -23,7 +23,9 @@ const ICONS: Record<string, any> = {
   bookmark: Bookmark,
   message: MessageSquare,
   view: Eye,
-  collab_request: Handshake,
+  connection_request: Handshake,
+  connection_accepted: Handshake,
+  connection_declined: Handshake,
 };
 
 export function NotificationsBell() {
