@@ -1,447 +1,263 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
 import { Navigate, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { safeErrorMessage } from "@/lib/errors";
-import {
-  Eye, Users, Rocket, ArrowRight, Plus, Settings, GraduationCap, FileText, Filter, Calendar, Handshake, CheckCircle2, XCircle, Video,
-} from "lucide-react";
-import type { Database } from "@/integrations/supabase/types";
-import {
-  recommendStartupsForInvestor,
-  recommendStartupsForMentor,
-  type RecommendedStartup,
-} from "@/lib/recommendations";
-import { SchedulePitchSessionDialog } from "@/components/SchedulePitchSessionDialog";
-import { maturityLabel } from "@/lib/labels";
+import { Plus, Settings, Sparkles, Loader2, CheckCircle2, XCircle, Eye, Heart, Bookmark, MessageSquare, TrendingUp, Building2 } from "lucide-react";
+import { AIScoreBadge } from "@/components/AIScoreBadge";
+import { recommendOrgsForInvestor, type RecommendedOrg } from "@/lib/recommendations";
+import { stageLabel } from "@/lib/labels";
 
-type Startup = Database["public"]["Tables"]["startups"]["Row"];
-
-interface CollabRequest {
+interface Organization {
   id: string;
-  startup_id: string;
-  requester_id: string;
-  requester_role: string;
-  request_type: string;
-  message: string | null;
-  status: string;
-  created_at: string;
-  founder_id: string;
+  name: string;
+  sector: string | null;
+  is_published: boolean;
+  readiness_score: number | null;
+  funding_probability: number | null;
+  logo_url: string | null;
+  stage: string | null;
 }
 
-const REQUEST_TYPE_LABELS: Record<string, string> = {
-  pitch_session: "Pitch Session",
-  meeting: "Meeting",
-  prototype_demo: "Prototype Demo",
-  additional_info: "Additional Information",
-  funding_interest: "Funding Interest",
-  offer_mentorship: "Mentorship Offer",
-  strategy_discussion: "Strategy Discussion",
-  technical_discussion: "Technical Discussion",
-};
+interface ConnReq {
+  id: string;
+  organization_id: string;
+  initiator_id: string;
+  recipient_id: string;
+  direction: string;
+  status: string;
+  message: string | null;
+  created_at: string;
+}
 
 export default function Dashboard() {
   const { user, profile, roles, loading } = useAuth();
-  const [myStartups, setMyStartups] = useState<Startup[]>([]);
-  const [recs, setRecs] = useState<RecommendedStartup[]>([]);
-  const [recsLoading, setRecsLoading] = useState(false);
-  const [incomingRequests, setIncomingRequests] = useState<CollabRequest[]>([]);
-  const [outgoingRequests, setOutgoingRequests] = useState<CollabRequest[]>([]);
-  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
-  const [pitchSessions, setPitchSessions] = useState<any[]>([]);
-  const [scheduling, setScheduling] = useState<{ requestId: string; startupId: string; startupName: string; investorId: string } | null>(null);
+  const { format } = useCurrency();
   const { toast } = useToast();
+  const [orgs, setOrgs] = useState<Organization[]>([]);
+  const [incoming, setIncoming] = useState<ConnReq[]>([]);
+  const [outgoing, setOutgoing] = useState<ConnReq[]>([]);
+  const [recs, setRecs] = useState<RecommendedOrg[]>([]);
+  const [stats, setStats] = useState({ views: 0, likes: 0, bookmarks: 0, messages: 0 });
+  const [running, setRunning] = useState<string | null>(null);
 
-  const primaryRole = roles[0] ?? null;
-  const primaryRoleLabel = primaryRole ? primaryRole.charAt(0).toUpperCase() + primaryRole.slice(1) : "Member";
+  const isNgo = roles.includes("ngo");
+  const isInvestor = roles.includes("investor");
 
   useEffect(() => {
     if (!user || loading) return;
-
     (async () => {
-      // My startups
-      const { data: s } = await supabase.from("startups").select("*").eq("founder_id", user.id);
-      setMyStartups(s || []);
-
-      // Incoming collaboration requests (founder)
-      const { data: incoming } = await supabase
-        .from("collaboration_requests")
-        .select("*")
-        .eq("founder_id", user.id)
-        .order("created_at", { ascending: false });
-      setIncomingRequests(incoming || []);
-
-      // Outgoing collaboration requests (investor/mentor)
-      const { data: outgoing } = await supabase
-        .from("collaboration_requests")
-        .select("*")
-        .eq("requester_id", user.id)
-        .order("created_at", { ascending: false });
-      setOutgoingRequests(outgoing || []);
-
-      // Upcoming events
-      const { data: events } = await supabase
-        .from("innovation_events")
-        .select("*")
-        .gte("starts_at", new Date().toISOString())
-        .order("starts_at", { ascending: true })
-        .limit(3);
-      setUpcomingEvents(events || []);
-
-      // Pitch sessions (founder OR investor)
-      const { data: sessions } = await supabase
-        .from("pitch_sessions")
-        .select("*")
-        .or(`founder_id.eq.${user.id},investor_id.eq.${user.id}`)
-        .gte("scheduled_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
-        .order("scheduled_at", { ascending: true });
-      let withNames: any[] = sessions || [];
-      if (withNames.length > 0) {
-        const ids = Array.from(new Set(withNames.map((s) => s.startup_id)));
-        const { data: ss } = await supabase.from("startups").select("id,name").in("id", ids);
-        const byId = new Map((ss || []).map((s: any) => [s.id, s.name]));
-        withNames = withNames.map((s) => ({ ...s, startup_name: byId.get(s.startup_id) }));
+      if (isNgo) {
+        const { data: o } = await supabase.from("organizations").select("id,name,sector,is_published,readiness_score,funding_probability,logo_url,stage").eq("owner_id", user.id);
+        setOrgs(o || []);
+        if (o && o.length > 0) {
+          const ids = o.map((x) => x.id);
+          const [vs, ls, bs, ms] = await Promise.all([
+            supabase.from("org_profile_views").select("id", { count: "exact", head: true }).in("organization_id", ids),
+            supabase.from("org_likes").select("id", { count: "exact", head: true }).in("organization_id", ids),
+            supabase.from("org_bookmarks").select("id", { count: "exact", head: true }).in("organization_id", ids),
+            supabase.from("org_messages").select("id", { count: "exact", head: true }).eq("recipient_id", user.id),
+          ]);
+          setStats({ views: vs.count || 0, likes: ls.count || 0, bookmarks: bs.count || 0, messages: ms.count || 0 });
+        }
       }
-      setPitchSessions(withNames);
+      const { data: inc } = await supabase.from("connection_requests").select("*").eq("recipient_id", user.id).order("created_at", { ascending: false });
+      setIncoming(inc || []);
+      const { data: out } = await supabase.from("connection_requests").select("*").eq("initiator_id", user.id).order("created_at", { ascending: false });
+      setOutgoing(out || []);
+      if (isInvestor) {
+        const r = await recommendOrgsForInvestor(user.id);
+        setRecs(r);
+      }
     })();
-  }, [user, loading]);
+  }, [user, loading, isNgo, isInvestor]);
 
-  // Rule-based recommendations
-  useEffect(() => {
-    if (!user || !primaryRole) return;
-    if (primaryRole !== "investor" && primaryRole !== "mentor") return;
-    setRecsLoading(true);
-    (primaryRole === "investor"
-      ? recommendStartupsForInvestor(user.id)
-      : recommendStartupsForMentor(user.id)
-    ).then((r) => {
-      setRecs(r);
-      setRecsLoading(false);
-    });
-  }, [user, primaryRole]);
-
-  const refreshSessions = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("pitch_sessions")
-      .select("*")
-      .or(`founder_id.eq.${user.id},investor_id.eq.${user.id}`)
-      .gte("scheduled_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
-      .order("scheduled_at", { ascending: true });
-    let withNames: any[] = data || [];
-    if (withNames.length > 0) {
-      const ids = Array.from(new Set(withNames.map((s) => s.startup_id)));
-      const { data: ss } = await supabase.from("startups").select("id,name").in("id", ids);
-      const byId = new Map((ss || []).map((s: any) => [s.id, s.name]));
-      withNames = withNames.map((s) => ({ ...s, startup_name: byId.get(s.startup_id) }));
-    }
-    setPitchSessions(withNames);
-  };
-
-  const respondToRequest = async (req: CollabRequest, status: "accepted" | "declined") => {
-    const { error } = await supabase.from("collaboration_requests").update({ status }).eq("id", req.id);
-    if (error) {
-      toast({ title: "Error", description: safeErrorMessage(error), variant: "destructive" });
-      return;
-    }
-    toast({ title: `Request ${status}` });
-    setIncomingRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status } : r));
-    if (status === "accepted" && req.request_type === "pitch_session") {
-      setScheduling({ requestId: req.id, startupId: req.startup_id, startupName: "this startup", investorId: req.requester_id });
-    }
-  };
-
-  const publishStartup = async (id: string) => {
-    const { error } = await supabase.from("startups").update({ is_published: true }).eq("id", id);
+  const respond = async (id: string, status: "accepted" | "declined") => {
+    const { error } = await supabase.from("connection_requests").update({ status }).eq("id", id);
     if (error) toast({ title: "Error", description: safeErrorMessage(error), variant: "destructive" });
-    else { toast({ title: "Startup published!" }); const { data } = await supabase.from("startups").select("*").eq("founder_id", user!.id); setMyStartups(data || []); }
+    else { toast({ title: `Request ${status}` }); setIncoming((p) => p.map((r) => r.id === id ? { ...r, status } : r)); }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const runAI = async (orgId: string, fn: "ai-readiness" | "ai-funding-probability") => {
+    setRunning(`${orgId}-${fn}`);
+    const { error } = await supabase.functions.invoke(fn, { body: { organization_id: orgId } });
+    setRunning(null);
+    if (error) toast({ title: "AI error", description: error.message, variant: "destructive" });
+    else {
+      toast({ title: "Analysis complete" });
+      const { data: o } = await supabase.from("organizations").select("id,name,sector,is_published,readiness_score,funding_probability,logo_url,stage").eq("owner_id", user!.id);
+      setOrgs(o || []);
+    }
+  };
 
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!user) return <Navigate to="/login" replace />;
 
-  const isFounder = primaryRole === "founder";
-  const isInvestor = primaryRole === "investor";
-  const isMentor = primaryRole === "mentor";
+  const primaryRole = isNgo ? "NGO" : isInvestor ? "Funder" : "Member";
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1">
-        {/* Header */}
         <div className="border-b border-border bg-muted/30">
           <div className="container py-6 flex items-center justify-between">
             <div>
-              <h1 className="font-display text-2xl font-bold text-foreground">
-                Welcome back{profile?.full_name ? `, ${profile.full_name}` : ""}
-              </h1>
+              <h1 className="font-display text-2xl font-bold text-foreground">Welcome back{profile?.full_name ? `, ${profile.full_name}` : ""}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary" className="capitalize text-xs">{primaryRoleLabel}</Badge>
+                <Badge variant="secondary" className="text-xs">{primaryRole}</Badge>
                 <span className="text-xs text-muted-foreground">{user.email}</span>
               </div>
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/settings" className="gap-2"><Settings className="h-4 w-4" /> Settings</Link>
-            </Button>
+            <Button variant="outline" size="sm" asChild><Link to="/settings" className="gap-2"><Settings className="h-4 w-4" /> Settings</Link></Button>
           </div>
         </div>
 
-        <div className="container py-6">
+        <div className="container py-6 space-y-6">
+          {isNgo && orgs.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: "Profile views", value: stats.views, icon: Eye },
+                { label: "Likes", value: stats.likes, icon: Heart },
+                { label: "Saves", value: stats.bookmarks, icon: Bookmark },
+                { label: "Messages", value: stats.messages, icon: MessageSquare },
+              ].map((s) => (
+                <div key={s.label} className="rounded-lg border border-border bg-card p-4">
+                  <s.icon className="h-4 w-4 text-primary mb-2" />
+                  <p className="text-2xl font-display font-bold">{s.value}</p>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-
-              {/* Founder: My Startups */}
-              {isFounder && (
+              {isNgo && (
                 <div className="rounded-lg border border-border bg-card">
                   <div className="flex items-center justify-between p-5 border-b border-border">
-                    <h2 className="font-display font-semibold text-foreground">My Startups</h2>
-                    <Button size="sm" asChild className="gap-1">
-                      <Link to="/create-startup"><Plus className="h-3.5 w-3.5" /> Add Startup</Link>
-                    </Button>
+                    <h2 className="font-display font-semibold flex items-center gap-2"><Building2 className="h-4 w-4 text-primary" /> My Organizations</h2>
+                    <Button size="sm" asChild className="gap-1"><Link to="/create-organization"><Plus className="h-3.5 w-3.5" /> Add</Link></Button>
                   </div>
-                  <div className="p-5">
-                    {myStartups.length === 0 ? (
+                  <div className="p-5 space-y-3">
+                    {orgs.length === 0 ? (
                       <div className="text-center py-6">
-                        <Rocket className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground mb-3">No startups yet</p>
-                        <Button size="sm" asChild><Link to="/create-startup">Create your first startup</Link></Button>
+                        <Building2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground mb-3">No organizations yet</p>
+                        <Button size="sm" asChild><Link to="/create-organization">Create your first organization</Link></Button>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {myStartups.map((s) => (
-                          <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <Link to={`/ventures/${s.id}`} className="text-sm font-medium text-foreground hover:text-primary">{s.name}</Link>
-                                <Badge variant={s.is_published ? "default" : "secondary"} className="text-xs">{s.is_published ? "Published" : "Draft"}</Badge>
-                                {s.current_stage && <Badge variant="outline" className="text-xs">{maturityLabel(s.current_stage)}</Badge>}
-                                {s.is_university_project && (
-                                  <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary">
-                                    <GraduationCap className="h-3 w-3" />
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-0.5 truncate">{s.industry} · {s.innovation_category || "—"}</p>
-                            </div>
-                            <div className="flex gap-2 ml-3">
-                              {s.pitch_deck_url && <Badge variant="outline" className="text-xs gap-1"><FileText className="h-3 w-3" /> Deck</Badge>}
-                              {!s.is_published && <Button size="sm" variant="outline" onClick={() => publishStartup(s.id)} className="text-xs">Publish</Button>}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Founder: Incoming Collaboration Requests */}
-              {isFounder && (
-                <div className="rounded-lg border border-border bg-card">
-                  <div className="flex items-center gap-2 p-5 border-b border-border">
-                    <Handshake className="h-5 w-5 text-primary" />
-                    <h2 className="font-display font-semibold text-foreground">Collaboration Requests</h2>
-                  </div>
-                  <div className="p-5">
-                    {incomingRequests.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-4">No requests yet.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {incomingRequests.map((r) => (
-                          <div key={r.id} className="p-3 rounded-lg border border-border">
-                            <div className="flex items-center justify-between gap-3 flex-wrap">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="secondary" className="text-xs capitalize">{r.requester_role}</Badge>
-                                <Badge variant="outline" className="text-xs">{REQUEST_TYPE_LABELS[r.request_type] || r.request_type}</Badge>
-                                <Badge
-                                  variant={r.status === "accepted" ? "default" : r.status === "declined" ? "destructive" : "secondary"}
-                                  className="text-xs capitalize"
-                                >{r.status}</Badge>
-                              </div>
-                              {r.status === "pending" && (
-                                <div className="flex gap-2">
-                                  <Button size="sm" variant="outline" onClick={() => respondToRequest(r, "accepted")} className="gap-1 text-xs">
-                                    <CheckCircle2 className="h-3.5 w-3.5" /> {r.request_type === "pitch_session" ? "Accept & Schedule" : "Accept"}
-                                  </Button>
-                                  <Button size="sm" variant="outline" onClick={() => respondToRequest(r, "declined")} className="gap-1 text-xs">
-                                    <XCircle className="h-3.5 w-3.5" /> Decline
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                            {r.message && <p className="text-xs text-muted-foreground mt-2">{r.message}</p>}
-                            <p className="text-xs text-muted-foreground mt-1">{new Date(r.created_at).toLocaleDateString()}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Investor / Mentor: Recommended Startups (rule-based) */}
-              {(isInvestor || isMentor) && (
-                <div className="rounded-lg border border-border bg-card">
-                  <div className="flex items-center gap-2 p-5 border-b border-border">
-                    <Filter className="h-5 w-5 text-primary" />
-                    <h2 className="font-display font-semibold text-foreground">Recommended Startups</h2>
-                    <span className="text-xs text-muted-foreground ml-1">via rule-based filtering</span>
-                  </div>
-                  <div className="p-5">
-                    {recsLoading ? (
-                      <p className="text-sm text-muted-foreground py-4">Loading recommendations…</p>
-                    ) : recs.length === 0 ? (
-                      <div className="text-center py-6">
-                        <p className="text-sm text-muted-foreground mb-2">No matching startups yet</p>
-                        <p className="text-xs text-muted-foreground">Define your preferences in <Link to="/settings" className="text-primary hover:underline">Settings</Link> to improve recommendations.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {recs.map((s) => (
-                          <Link key={s.id} to={`/ventures/${s.id}`} className="block p-3 rounded-lg border border-border hover:border-primary/30 transition-colors">
-                            <div className="flex items-center justify-between gap-3 flex-wrap">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-foreground">{s.name}</p>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {s.industry && <Badge variant="secondary" className="text-xs">{s.industry}</Badge>}
-                                  {s.current_stage && <Badge variant="outline" className="text-xs">{maturityLabel(s.current_stage)}</Badge>}
-                                </div>
-                                {s.match_reasons.length > 0 && (
-                                  <p className="text-xs text-muted-foreground mt-1.5">{s.match_reasons.join(" · ")}</p>
-                                )}
-                              </div>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Investor / Mentor: My Requests */}
-              {(isInvestor || isMentor) && (
-                <div className="rounded-lg border border-border bg-card">
-                  <div className="flex items-center gap-2 p-5 border-b border-border">
-                    <Handshake className="h-5 w-5 text-primary" />
-                    <h2 className="font-display font-semibold text-foreground">My Collaboration Requests</h2>
-                  </div>
-                  <div className="p-5">
-                    {outgoingRequests.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-4">You haven't sent any requests yet.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {outgoingRequests.map((r) => (
-                          <div key={r.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                    ) : orgs.map((o) => (
+                      <div key={o.id} className="p-3 rounded-lg border border-border">
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <Badge variant="outline" className="text-xs">{REQUEST_TYPE_LABELS[r.request_type] || r.request_type}</Badge>
-                              <Badge
-                                variant={r.status === "accepted" ? "default" : r.status === "declined" ? "destructive" : "secondary"}
-                                className="text-xs capitalize"
-                              >{r.status}</Badge>
+                              <Link to={`/organizations/${o.id}`} className="text-sm font-medium hover:text-primary">{o.name}</Link>
+                              <Badge variant={o.is_published ? "default" : "secondary"} className="text-xs">{o.is_published ? "Published" : "Draft"}</Badge>
+                              {o.stage && <Badge variant="outline" className="text-xs">{stageLabel(o.stage)}</Badge>}
                             </div>
-                            <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</span>
+                            <p className="text-xs text-muted-foreground mt-0.5">{o.sector || "—"}</p>
                           </div>
-                        ))}
+                          <div className="flex gap-2 items-center">
+                            {o.readiness_score !== null && <AIScoreBadge score={o.readiness_score} label="Readiness" size="sm" />}
+                            {o.funding_probability !== null && <AIScoreBadge score={o.funding_probability} label="Funding chance" size="sm" />}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-3 flex-wrap">
+                          <Button size="sm" variant="outline" disabled={running === `${o.id}-ai-readiness`} onClick={() => runAI(o.id, "ai-readiness")} className="text-xs gap-1">
+                            {running === `${o.id}-ai-readiness` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Run readiness analysis
+                          </Button>
+                          <Button size="sm" variant="outline" disabled={running === `${o.id}-ai-funding-probability`} onClick={() => runAI(o.id, "ai-funding-probability")} className="text-xs gap-1">
+                            {running === `${o.id}-ai-funding-probability` ? <Loader2 className="h-3 w-3 animate-spin" /> : <TrendingUp className="h-3 w-3" />} Funding probability
+                          </Button>
+                          <Button size="sm" variant="outline" asChild className="text-xs"><Link to={`/organizations/${o.id}`}>View</Link></Button>
+                        </div>
                       </div>
-                    )}
+                    ))}
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              <div className="rounded-lg border border-border bg-card p-5">
-                <h2 className="font-display font-semibold text-foreground mb-4">Quick Actions</h2>
-                <div className="space-y-3">
-                  {isFounder && (
-                    <Link to="/create-startup" className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 transition-colors">
-                      <Plus className="h-5 w-5 text-primary shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground">Add Startup</p>
-                        <p className="text-xs text-muted-foreground">Create a new venture listing</p>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                    </Link>
-                  )}
-                  <Link to="/settings" className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 transition-colors">
-                    <Settings className="h-5 w-5 text-primary shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{isInvestor || isMentor ? "Update Preferences" : "Edit Profile"}</p>
-                      <p className="text-xs text-muted-foreground">{isInvestor || isMentor ? "Improve filtering" : "Update your information"}</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  </Link>
-                  <Link to="/discover" className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 transition-colors">
-                    <Eye className="h-5 w-5 text-primary shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">Explore Ventures</p>
-                      <p className="text-xs text-muted-foreground">Discover startups</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  </Link>
-                  <Link to="/events" className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 transition-colors">
-                    <Calendar className="h-5 w-5 text-primary shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">Innovation Events</p>
-                      <p className="text-xs text-muted-foreground">Hackathons, demo days, fairs</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  </Link>
-                </div>
-              </div>
-
-              {upcomingEvents.length > 0 && (
-                <div className="rounded-lg border border-border bg-card p-5">
-                  <h2 className="font-display font-semibold text-foreground mb-3">Upcoming Events</h2>
-                  <div className="space-y-3">
-                    {upcomingEvents.map((e) => (
-                      <Link key={e.id} to={`/events/${e.id}`} className="block">
-                        <p className="text-sm font-medium text-foreground hover:text-primary">{e.title}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(e.starts_at).toLocaleDateString()} · {e.university || "—"}</p>
+              {isInvestor && (
+                <div className="rounded-lg border border-border bg-card">
+                  <div className="flex items-center gap-2 p-5 border-b border-border">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <h2 className="font-display font-semibold">AI-Recommended Organizations</h2>
+                  </div>
+                  <div className="p-5 space-y-3">
+                    {recs.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4">Set your preferences in <Link to="/settings" className="text-primary">Settings</Link> to see recommendations.</p>
+                    ) : recs.map((r) => (
+                      <Link key={r.id} to={`/organizations/${r.id}`} className="block p-3 rounded-lg border border-border hover:border-primary/30 transition-colors">
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{r.name}</p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {r.sector && <Badge variant="secondary" className="text-xs">{r.sector}</Badge>}
+                              {r.country && <Badge variant="outline" className="text-xs">{r.country}</Badge>}
+                            </div>
+                            {r.match_reasons.length > 0 && <p className="text-xs text-muted-foreground mt-1.5">{r.match_reasons.join(" · ")}</p>}
+                          </div>
+                          <AIScoreBadge score={r.match_score} label="Match" size="sm" />
+                        </div>
                       </Link>
                     ))}
                   </div>
                 </div>
               )}
 
-              {pitchSessions.length > 0 && (
-                <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Video className="h-5 w-5 text-primary" />
-                    <h2 className="font-display font-semibold text-foreground">Live Pitch Sessions</h2>
+              {incoming.length > 0 && (
+                <div className="rounded-lg border border-border bg-card">
+                  <div className="p-5 border-b border-border">
+                    <h2 className="font-display font-semibold">Incoming Connection Requests</h2>
                   </div>
-                  <div className="space-y-3">
-                    {pitchSessions.map((s) => {
-                      const ms = new Date(s.scheduled_at).getTime();
-                      const minutesUntil = Math.round((ms - Date.now()) / 60000);
-                      const canJoin = minutesUntil <= 10 && minutesUntil > -120;
-                      return (
-                        <div key={s.id} className="rounded-lg border border-border bg-card p-3">
-                          <p className="text-sm font-medium text-foreground">{s.startup_name || "Pitch session"}</p>
-                          <p className="text-xs text-muted-foreground mb-2">{new Date(s.scheduled_at).toLocaleString()} · {s.duration_minutes} min</p>
-                          <Button asChild size="sm" variant={canJoin ? "default" : "outline"} className="w-full gap-1">
-                            <Link to={`/pitch-session/${s.id}`}>
-                              <Video className="h-3.5 w-3.5" />
-                              {canJoin ? "Join now" : minutesUntil > 0 ? `In ${minutesUntil} min` : "View room"}
-                            </Link>
-                          </Button>
+                  <div className="p-5 space-y-3">
+                    {incoming.map((r) => (
+                      <div key={r.id} className="p-3 rounded-lg border border-border">
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className="text-xs">{r.direction === "investor_to_ngo" ? "Funder interested" : "NGO outreach"}</Badge>
+                            <Badge variant={r.status === "accepted" ? "default" : r.status === "declined" ? "destructive" : "secondary"} className="text-xs capitalize">{r.status}</Badge>
+                          </div>
+                          {r.status === "pending" && (
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={() => respond(r.id, "accepted")} className="gap-1 text-xs"><CheckCircle2 className="h-3.5 w-3.5" /> Accept</Button>
+                              <Button size="sm" variant="outline" onClick={() => respond(r.id, "declined")} className="gap-1 text-xs"><XCircle className="h-3.5 w-3.5" /> Decline</Button>
+                            </div>
+                          )}
                         </div>
-                      );
-                    })}
+                        {r.message && <p className="text-xs text-muted-foreground mt-2">"{r.message}"</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-lg border border-border bg-card p-5">
+                <h3 className="font-display font-semibold text-sm mb-3">Quick links</h3>
+                <div className="space-y-2">
+                  <Button variant="outline" className="w-full justify-start" size="sm" asChild><Link to="/discover">Browse organizations</Link></Button>
+                  <Button variant="outline" className="w-full justify-start" size="sm" asChild><Link to="/investors">Browse funders</Link></Button>
+                  {isNgo && <Button variant="outline" className="w-full justify-start" size="sm" asChild><Link to="/create-organization">Create organization</Link></Button>}
+                </div>
+              </div>
+
+              {outgoing.length > 0 && (
+                <div className="rounded-lg border border-border bg-card p-5">
+                  <h3 className="font-display font-semibold text-sm mb-3">My requests</h3>
+                  <div className="space-y-2">
+                    {outgoing.slice(0, 5).map((r) => (
+                      <div key={r.id} className="flex items-center justify-between text-xs">
+                        <Link to={`/organizations/${r.organization_id}`} className="text-muted-foreground hover:text-foreground truncate">Request</Link>
+                        <Badge variant={r.status === "accepted" ? "default" : r.status === "declined" ? "destructive" : "secondary"} className="text-[10px] capitalize">{r.status}</Badge>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -450,18 +266,6 @@ export default function Dashboard() {
         </div>
       </main>
       <Footer />
-      {scheduling && (
-        <SchedulePitchSessionDialog
-          open={!!scheduling}
-          onOpenChange={(v) => { if (!v) setScheduling(null); }}
-          collaborationRequestId={scheduling.requestId}
-          startupId={scheduling.startupId}
-          startupName={scheduling.startupName}
-          investorId={scheduling.investorId}
-          onScheduled={refreshSessions}
-        />
-      )}
     </div>
   );
 }
-
