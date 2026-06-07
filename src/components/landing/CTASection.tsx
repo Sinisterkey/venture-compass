@@ -11,35 +11,24 @@ export function CTASection() {
     <section className="py-16 bg-primary">
       <div className="container text-center">
         <h2 className="font-display text-2xl md:text-3xl font-bold text-primary-foreground mb-3">
-          {isLoggedIn ? "Welcome back to LaunchPad Africa" : "Start your LaunchPad Africa journey"}
+          {isLoggedIn ? "Welcome back" : "Build trust. Find funding. Drive impact."}
         </h2>
         <p className="text-primary-foreground/70 max-w-lg mx-auto mb-8">
-          {isLoggedIn
-            ? "Jump back into your dashboard or browse the latest ventures from across the continent."
-            : "Join the fastest growing community of student founders, investors, and mentors driving impact across the continent."}
+          {isLoggedIn ? "Jump back into your dashboard." : "Join the AI-powered ecosystem connecting Africa's most impactful organizations with the funders who care."}
         </p>
         {!loading && (
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {isLoggedIn ? (
               <Button size="lg" variant="secondary" className="text-base px-8 h-12" asChild>
-                <Link to="/dashboard">
-                  <LayoutDashboard className="mr-2 h-4 w-4" /> Go to dashboard
-                </Link>
+                <Link to="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" /> Go to dashboard</Link>
               </Button>
             ) : (
               <Button size="lg" variant="secondary" className="text-base px-8 h-12" asChild>
-                <Link to="/register">
-                  Create an account <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+                <Link to="/register">Create an account <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             )}
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-base px-8 h-12 bg-transparent border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-              asChild
-            >
-              <Link to="/discover">Browse ventures</Link>
+            <Button size="lg" variant="outline" className="text-base px-8 h-12 bg-transparent border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" asChild>
+              <Link to="/discover">Browse organizations</Link>
             </Button>
           </div>
         )}
