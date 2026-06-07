@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import type { Role } from "@/pages/Register";
 
 const ROLES: { value: Role; label: string; description: string; icon: string }[] = [
-  { value: "founder", label: "Founder", description: "Showcase your startup and connect with investors", icon: "🚀" },
-  { value: "investor", label: "Investor & Mentor", description: "Discover deal flow, back founders, and share your expertise", icon: "💰" },
+  { value: "ngo", label: "NGO / Organization", description: "Showcase your mission, create projects, and connect with funders", icon: "🌍" },
+  { value: "investor", label: "Funder / Investor", description: "Donors, foundations, grant makers, and impact investors", icon: "💚" },
 ];
 
 interface Props {

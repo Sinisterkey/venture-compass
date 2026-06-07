@@ -7,20 +7,18 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import Index from "./pages/Index";
 import Discover from "./pages/Discover";
+import Investors from "./pages/Investors";
 import About from "./pages/About";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
-import CreateStartup from "./pages/CreateStartup";
+import CreateOrganization from "./pages/CreateOrganization";
+import OrganizationDetail from "./pages/OrganizationDetail";
+import InvestorDetail from "./pages/InvestorDetail";
 import Admin from "./pages/Admin";
-import VentureDetail from "./pages/VentureDetail";
-import Events from "./pages/Events";
-import EventDetail from "./pages/EventDetail";
-import AdminEvents from "./pages/AdminEvents";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
-import PitchSession from "./pages/PitchSession";
 
 const queryClient = new QueryClient();
 
@@ -35,20 +33,17 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/discover" element={<Discover />} />
+              <Route path="/investors" element={<Investors />} />
+              <Route path="/investors/:id" element={<InvestorDetail />} />
+              <Route path="/organizations/:id" element={<OrganizationDetail />} />
               <Route path="/about" element={<About />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/settings" element={<Settings />} />
-              <Route path="/create-startup" element={<CreateStartup />} />
+              <Route path="/create-organization" element={<CreateOrganization />} />
               <Route path="/admin" element={<Admin />} />
-              <Route path="/admin/events" element={<AdminEvents />} />
-              <Route path="/ventures/:id" element={<VentureDetail />} />
-              <Route path="/events" element={<Events />} />
-              <Route path="/events/:id" element={<EventDetail />} />
-              <Route path="/pitch-session/:id" element={<PitchSession />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </CurrencyProvider>

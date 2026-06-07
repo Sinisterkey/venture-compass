@@ -14,154 +14,70 @@ export type Database = {
   }
   public: {
     Tables: {
-      collaboration_requests: {
+      connection_requests: {
         Row: {
           created_at: string
-          founder_id: string
+          direction: Database["public"]["Enums"]["connection_direction"]
+          due_diligence_granted: boolean
           id: string
+          initiator_id: string
           message: string | null
-          request_type: Database["public"]["Enums"]["collab_request_type"]
-          requester_id: string
-          requester_role: string
-          startup_id: string
-          status: Database["public"]["Enums"]["collab_status"]
+          organization_id: string
+          recipient_id: string
+          status: Database["public"]["Enums"]["connection_status"]
           updated_at: string
         }
         Insert: {
           created_at?: string
-          founder_id: string
+          direction: Database["public"]["Enums"]["connection_direction"]
+          due_diligence_granted?: boolean
           id?: string
+          initiator_id: string
           message?: string | null
-          request_type: Database["public"]["Enums"]["collab_request_type"]
-          requester_id: string
-          requester_role: string
-          startup_id: string
-          status?: Database["public"]["Enums"]["collab_status"]
+          organization_id: string
+          recipient_id: string
+          status?: Database["public"]["Enums"]["connection_status"]
           updated_at?: string
         }
         Update: {
           created_at?: string
-          founder_id?: string
+          direction?: Database["public"]["Enums"]["connection_direction"]
+          due_diligence_granted?: boolean
           id?: string
+          initiator_id?: string
           message?: string | null
-          request_type?: Database["public"]["Enums"]["collab_request_type"]
-          requester_id?: string
-          requester_role?: string
-          startup_id?: string
-          status?: Database["public"]["Enums"]["collab_status"]
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      event_applications: {
-        Row: {
-          applicant_id: string
-          created_at: string
-          event_id: string
-          id: string
-          startup_id: string
-          status: Database["public"]["Enums"]["event_app_status"]
-          updated_at: string
-        }
-        Insert: {
-          applicant_id: string
-          created_at?: string
-          event_id: string
-          id?: string
-          startup_id: string
-          status?: Database["public"]["Enums"]["event_app_status"]
-          updated_at?: string
-        }
-        Update: {
-          applicant_id?: string
-          created_at?: string
-          event_id?: string
-          id?: string
-          startup_id?: string
-          status?: Database["public"]["Enums"]["event_app_status"]
+          organization_id?: string
+          recipient_id?: string
+          status?: Database["public"]["Enums"]["connection_status"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "event_applications_event_id_fkey"
-            columns: ["event_id"]
+            foreignKeyName: "connection_requests_organization_id_fkey"
+            columns: ["organization_id"]
             isOneToOne: false
-            referencedRelation: "innovation_events"
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
       }
-      innovation_events: {
-        Row: {
-          agenda: Json | null
-          capacity: number | null
-          cover_image_url: string | null
-          created_at: string
-          created_by: string | null
-          description: string | null
-          ends_at: string | null
-          id: string
-          location: string | null
-          prizes: string | null
-          registration_deadline: string | null
-          speakers: Json | null
-          starts_at: string
-          title: string
-          type: Database["public"]["Enums"]["event_type"]
-          university: string | null
-          updated_at: string
-        }
-        Insert: {
-          agenda?: Json | null
-          capacity?: number | null
-          cover_image_url?: string | null
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          ends_at?: string | null
-          id?: string
-          location?: string | null
-          prizes?: string | null
-          registration_deadline?: string | null
-          speakers?: Json | null
-          starts_at: string
-          title: string
-          type: Database["public"]["Enums"]["event_type"]
-          university?: string | null
-          updated_at?: string
-        }
-        Update: {
-          agenda?: Json | null
-          capacity?: number | null
-          cover_image_url?: string | null
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          ends_at?: string | null
-          id?: string
-          location?: string | null
-          prizes?: string | null
-          registration_deadline?: string | null
-          speakers?: Json | null
-          starts_at?: string
-          title?: string
-          type?: Database["public"]["Enums"]["event_type"]
-          university?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       investor_profiles: {
         Row: {
+          bio: string | null
           created_at: string
           geographic_preferences: string[] | null
           id: string
           innovation_categories: string[] | null
           investment_focus: string[] | null
           investor_type: string | null
+          is_verified: boolean | null
           max_investment: number | null
           min_investment: number | null
+          organization_name: string | null
           portfolio_companies: string[] | null
+          preferred_beneficiaries: string[] | null
+          preferred_countries: string[] | null
+          preferred_sdgs: number[] | null
           preferred_stages:
             | Database["public"]["Enums"]["funding_stage"][]
             | null
@@ -169,15 +85,21 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bio?: string | null
           created_at?: string
           geographic_preferences?: string[] | null
           id?: string
           innovation_categories?: string[] | null
           investment_focus?: string[] | null
           investor_type?: string | null
+          is_verified?: boolean | null
           max_investment?: number | null
           min_investment?: number | null
+          organization_name?: string | null
           portfolio_companies?: string[] | null
+          preferred_beneficiaries?: string[] | null
+          preferred_countries?: string[] | null
+          preferred_sdgs?: number[] | null
           preferred_stages?:
             | Database["public"]["Enums"]["funding_stage"][]
             | null
@@ -185,57 +107,24 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bio?: string | null
           created_at?: string
           geographic_preferences?: string[] | null
           id?: string
           innovation_categories?: string[] | null
           investment_focus?: string[] | null
           investor_type?: string | null
+          is_verified?: boolean | null
           max_investment?: number | null
           min_investment?: number | null
+          organization_name?: string | null
           portfolio_companies?: string[] | null
+          preferred_beneficiaries?: string[] | null
+          preferred_countries?: string[] | null
+          preferred_sdgs?: number[] | null
           preferred_stages?:
             | Database["public"]["Enums"]["funding_stage"][]
             | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      mentor_profiles: {
-        Row: {
-          availability: string | null
-          created_at: string
-          expertise: string[] | null
-          id: string
-          industries: string[] | null
-          max_mentees: number | null
-          preferred_categories: string[] | null
-          specialization: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          availability?: string | null
-          created_at?: string
-          expertise?: string[] | null
-          id?: string
-          industries?: string[] | null
-          max_mentees?: number | null
-          preferred_categories?: string[] | null
-          specialization?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          availability?: string | null
-          created_at?: string
-          expertise?: string[] | null
-          id?: string
-          industries?: string[] | null
-          max_mentees?: number | null
-          preferred_categories?: string[] | null
-          specialization?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -248,9 +137,9 @@ export type Database = {
           created_at: string
           id: string
           link: string | null
+          organization_id: string | null
           read_at: string | null
           recipient_id: string
-          startup_id: string | null
           title: string
           type: string
         }
@@ -260,9 +149,9 @@ export type Database = {
           created_at?: string
           id?: string
           link?: string | null
+          organization_id?: string | null
           read_at?: string | null
           recipient_id: string
-          startup_id?: string | null
           title: string
           type: string
         }
@@ -272,80 +161,293 @@ export type Database = {
           created_at?: string
           id?: string
           link?: string | null
+          organization_id?: string | null
           read_at?: string | null
           recipient_id?: string
-          startup_id?: string | null
           title?: string
           type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      pitch_sessions: {
+      org_bookmarks: {
         Row: {
-          collaboration_request_id: string | null
           created_at: string
-          duration_minutes: number
-          founder_id: string
           id: string
-          investor_id: string
-          notes: string | null
-          room_name: string
-          scheduled_at: string
-          startup_id: string
-          status: Database["public"]["Enums"]["pitch_session_status"]
-          updated_at: string
+          organization_id: string
+          user_id: string
         }
         Insert: {
-          collaboration_request_id?: string | null
           created_at?: string
-          duration_minutes?: number
-          founder_id: string
           id?: string
-          investor_id: string
-          notes?: string | null
-          room_name: string
-          scheduled_at: string
-          startup_id: string
-          status?: Database["public"]["Enums"]["pitch_session_status"]
-          updated_at?: string
+          organization_id: string
+          user_id: string
         }
         Update: {
-          collaboration_request_id?: string | null
           created_at?: string
-          duration_minutes?: number
-          founder_id?: string
           id?: string
-          investor_id?: string
-          notes?: string | null
-          room_name?: string
-          scheduled_at?: string
-          startup_id?: string
-          status?: Database["public"]["Enums"]["pitch_session_status"]
-          updated_at?: string
+          organization_id?: string
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "org_bookmarks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      profile_views: {
+      org_likes: {
         Row: {
           created_at: string
-          founder_id: string
           id: string
-          startup_id: string
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_likes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          organization_id: string | null
+          read_at: string | null
+          recipient_id: string
+          sender_id: string
+          subject: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          read_at?: string | null
+          recipient_id: string
+          sender_id: string
+          subject?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          sender_id?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_profile_views: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          owner_id: string
           viewer_id: string
         }
         Insert: {
           created_at?: string
-          founder_id: string
           id?: string
-          startup_id: string
+          organization_id: string
+          owner_id: string
           viewer_id: string
         }
         Update: {
           created_at?: string
-          founder_id?: string
           id?: string
-          startup_id?: string
+          organization_id?: string
+          owner_id?: string
           viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_profile_views_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          doc_type: string | null
+          id: string
+          organization_id: string
+          storage_path: string
+          title: string
+          uploader_id: string
+          visibility: Database["public"]["Enums"]["doc_visibility"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          doc_type?: string | null
+          id?: string
+          organization_id: string
+          storage_path: string
+          title: string
+          uploader_id: string
+          visibility?: Database["public"]["Enums"]["doc_visibility"]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          doc_type?: string | null
+          id?: string
+          organization_id?: string
+          storage_path?: string
+          title?: string
+          uploader_id?: string
+          visibility?: Database["public"]["Enums"]["doc_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          ai_last_analyzed_at: string | null
+          ai_strengths: string[] | null
+          ai_suggestions: string[] | null
+          ai_weaknesses: string[] | null
+          beneficiary_type: string | null
+          country: string | null
+          created_at: string
+          currency: string | null
+          email: string | null
+          founded_year: number | null
+          funding_probability: number | null
+          funding_required: number | null
+          id: string
+          impact_area: string | null
+          is_published: boolean | null
+          is_verified: boolean | null
+          logo_url: string | null
+          mission: string | null
+          name: string
+          owner_id: string
+          phone: string | null
+          province: string | null
+          readiness_score: number | null
+          sdgs: number[] | null
+          sector: string | null
+          short_description: string | null
+          stage: Database["public"]["Enums"]["org_stage"] | null
+          target_beneficiaries: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          ai_last_analyzed_at?: string | null
+          ai_strengths?: string[] | null
+          ai_suggestions?: string[] | null
+          ai_weaknesses?: string[] | null
+          beneficiary_type?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string | null
+          email?: string | null
+          founded_year?: number | null
+          funding_probability?: number | null
+          funding_required?: number | null
+          id?: string
+          impact_area?: string | null
+          is_published?: boolean | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          mission?: string | null
+          name: string
+          owner_id: string
+          phone?: string | null
+          province?: string | null
+          readiness_score?: number | null
+          sdgs?: number[] | null
+          sector?: string | null
+          short_description?: string | null
+          stage?: Database["public"]["Enums"]["org_stage"] | null
+          target_beneficiaries?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          ai_last_analyzed_at?: string | null
+          ai_strengths?: string[] | null
+          ai_suggestions?: string[] | null
+          ai_weaknesses?: string[] | null
+          beneficiary_type?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string | null
+          email?: string | null
+          founded_year?: number | null
+          funding_probability?: number | null
+          funding_required?: number | null
+          id?: string
+          impact_area?: string | null
+          is_published?: boolean | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          mission?: string | null
+          name?: string
+          owner_id?: string
+          phone?: string | null
+          province?: string | null
+          readiness_score?: number | null
+          sdgs?: number[] | null
+          sector?: string | null
+          short_description?: string | null
+          stage?: Database["public"]["Enums"]["org_stage"] | null
+          target_beneficiaries?: string | null
+          updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
@@ -390,258 +492,6 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
-          website?: string | null
-        }
-        Relationships: []
-      }
-      showcase_investors: {
-        Row: {
-          country: string | null
-          created_at: string
-          focus: string
-          id: string
-          initials: string
-          investor_type: string
-          name: string
-        }
-        Insert: {
-          country?: string | null
-          created_at?: string
-          focus: string
-          id?: string
-          initials: string
-          investor_type: string
-          name: string
-        }
-        Update: {
-          country?: string | null
-          created_at?: string
-          focus?: string
-          id?: string
-          initials?: string
-          investor_type?: string
-          name?: string
-        }
-        Relationships: []
-      }
-      showcase_ventures: {
-        Row: {
-          business_model: string | null
-          country: string
-          created_at: string
-          description: string
-          funding_requested: number | null
-          id: string
-          industry: string
-          location: string
-          logo_url: string | null
-          name: string
-          problem_statement: string | null
-          solution: string | null
-          stage: string
-          target_market: string | null
-          university: string | null
-          website: string | null
-        }
-        Insert: {
-          business_model?: string | null
-          country: string
-          created_at?: string
-          description: string
-          funding_requested?: number | null
-          id?: string
-          industry: string
-          location: string
-          logo_url?: string | null
-          name: string
-          problem_statement?: string | null
-          solution?: string | null
-          stage: string
-          target_market?: string | null
-          university?: string | null
-          website?: string | null
-        }
-        Update: {
-          business_model?: string | null
-          country?: string
-          created_at?: string
-          description?: string
-          funding_requested?: number | null
-          id?: string
-          industry?: string
-          location?: string
-          logo_url?: string | null
-          name?: string
-          problem_statement?: string | null
-          solution?: string | null
-          stage?: string
-          target_market?: string | null
-          university?: string | null
-          website?: string | null
-        }
-        Relationships: []
-      }
-      startup_bookmarks: {
-        Row: {
-          created_at: string
-          id: string
-          startup_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          startup_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          startup_id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      startup_likes: {
-        Row: {
-          created_at: string
-          id: string
-          startup_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          startup_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          startup_id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      startup_messages: {
-        Row: {
-          body: string
-          created_at: string
-          id: string
-          read_at: string | null
-          recipient_id: string
-          sender_id: string
-          startup_id: string
-          subject: string | null
-        }
-        Insert: {
-          body: string
-          created_at?: string
-          id?: string
-          read_at?: string | null
-          recipient_id: string
-          sender_id: string
-          startup_id: string
-          subject?: string | null
-        }
-        Update: {
-          body?: string
-          created_at?: string
-          id?: string
-          read_at?: string | null
-          recipient_id?: string
-          sender_id?: string
-          startup_id?: string
-          subject?: string | null
-        }
-        Relationships: []
-      }
-      startups: {
-        Row: {
-          business_model: string | null
-          created_at: string
-          current_stage: Database["public"]["Enums"]["startup_stage"] | null
-          demo_video_url: string | null
-          description: string | null
-          founder_id: string
-          funding_requested: number | null
-          funding_stage: Database["public"]["Enums"]["funding_stage"] | null
-          id: string
-          industry: string | null
-          innovation_category: string | null
-          is_published: boolean | null
-          is_university_project: boolean | null
-          logo_url: string | null
-          milestones: string[] | null
-          name: string
-          pitch_deck_url: string | null
-          pitch_score: number | null
-          problem_statement: string | null
-          solution: string | null
-          target_market: string | null
-          university_name: string | null
-          updated_at: string
-          verification_status:
-            | Database["public"]["Enums"]["verification_status"]
-            | null
-          website: string | null
-        }
-        Insert: {
-          business_model?: string | null
-          created_at?: string
-          current_stage?: Database["public"]["Enums"]["startup_stage"] | null
-          demo_video_url?: string | null
-          description?: string | null
-          founder_id: string
-          funding_requested?: number | null
-          funding_stage?: Database["public"]["Enums"]["funding_stage"] | null
-          id?: string
-          industry?: string | null
-          innovation_category?: string | null
-          is_published?: boolean | null
-          is_university_project?: boolean | null
-          logo_url?: string | null
-          milestones?: string[] | null
-          name: string
-          pitch_deck_url?: string | null
-          pitch_score?: number | null
-          problem_statement?: string | null
-          solution?: string | null
-          target_market?: string | null
-          university_name?: string | null
-          updated_at?: string
-          verification_status?:
-            | Database["public"]["Enums"]["verification_status"]
-            | null
-          website?: string | null
-        }
-        Update: {
-          business_model?: string | null
-          created_at?: string
-          current_stage?: Database["public"]["Enums"]["startup_stage"] | null
-          demo_video_url?: string | null
-          description?: string | null
-          founder_id?: string
-          funding_requested?: number | null
-          funding_stage?: Database["public"]["Enums"]["funding_stage"] | null
-          id?: string
-          industry?: string | null
-          innovation_category?: string | null
-          is_published?: boolean | null
-          is_university_project?: boolean | null
-          logo_url?: string | null
-          milestones?: string[] | null
-          name?: string
-          pitch_deck_url?: string | null
-          pitch_score?: number | null
-          problem_statement?: string | null
-          solution?: string | null
-          target_market?: string | null
-          university_name?: string | null
-          updated_at?: string
-          verification_status?:
-            | Database["public"]["Enums"]["verification_status"]
-            | null
           website?: string | null
         }
         Relationships: []
@@ -744,38 +594,16 @@ export type Database = {
         }
         Relationships: []
       }
-      published_startups: {
-        Row: {
-          business_model: string | null
-          city: string | null
-          country: string | null
-          created_at: string | null
-          current_stage: Database["public"]["Enums"]["startup_stage"] | null
-          demo_video_url: string | null
-          description: string | null
-          founder_id: string | null
-          founder_name: string | null
-          funding_requested: number | null
-          funding_stage: Database["public"]["Enums"]["funding_stage"] | null
-          id: string | null
-          industry: string | null
-          innovation_category: string | null
-          is_university_project: boolean | null
-          logo_url: string | null
-          milestones: string[] | null
-          name: string | null
-          pitch_deck_url: string | null
-          problem_statement: string | null
-          solution: string | null
-          target_market: string | null
-          university_name: string | null
-          website: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
-      can_view_pitch_deck: { Args: { _object_name: string }; Returns: boolean }
+      has_accepted_connection: {
+        Args: { _org_id: string; _viewer: string }
+        Returns: boolean
+      }
+      has_due_diligence: {
+        Args: { _org_id: string; _viewer: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -785,7 +613,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "founder" | "investor" | "mentor" | "university" | "admin"
+      app_role: "admin" | "founder" | "investor" | "ngo"
       collab_request_type:
         | "pitch_session"
         | "meeting"
@@ -796,6 +624,9 @@ export type Database = {
         | "strategy_discussion"
         | "technical_discussion"
       collab_status: "pending" | "accepted" | "declined"
+      connection_direction: "ngo_to_investor" | "investor_to_ngo"
+      connection_status: "pending" | "accepted" | "declined"
+      doc_visibility: "protected" | "confidential"
       event_app_status: "pending" | "accepted" | "rejected" | "withdrawn"
       event_type:
         | "hackathon"
@@ -805,6 +636,14 @@ export type Database = {
         | "pitch_event"
       founder_type: "student" | "independent"
       funding_stage: "pre_seed" | "seed" | "series_a" | "series_b_plus"
+      investor_type:
+        | "individual"
+        | "foundation"
+        | "grant_maker"
+        | "development_partner"
+        | "corporate"
+        | "impact_fund"
+      org_stage: "idea" | "early" | "established" | "scaling" | "mature"
       pitch_session_status: "scheduled" | "live" | "completed" | "cancelled"
       startup_stage: "idea" | "prototype" | "mvp" | "pilot" | "revenue"
       verification_status:
@@ -939,7 +778,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["founder", "investor", "mentor", "university", "admin"],
+      app_role: ["admin", "founder", "investor", "ngo"],
       collab_request_type: [
         "pitch_session",
         "meeting",
@@ -951,6 +790,9 @@ export const Constants = {
         "technical_discussion",
       ],
       collab_status: ["pending", "accepted", "declined"],
+      connection_direction: ["ngo_to_investor", "investor_to_ngo"],
+      connection_status: ["pending", "accepted", "declined"],
+      doc_visibility: ["protected", "confidential"],
       event_app_status: ["pending", "accepted", "rejected", "withdrawn"],
       event_type: [
         "hackathon",
@@ -961,6 +803,15 @@ export const Constants = {
       ],
       founder_type: ["student", "independent"],
       funding_stage: ["pre_seed", "seed", "series_a", "series_b_plus"],
+      investor_type: [
+        "individual",
+        "foundation",
+        "grant_maker",
+        "development_partner",
+        "corporate",
+        "impact_fund",
+      ],
+      org_stage: ["idea", "early", "established", "scaling", "mature"],
       pitch_session_status: ["scheduled", "live", "completed", "cancelled"],
       startup_stage: ["idea", "prototype", "mvp", "pilot", "revenue"],
       verification_status: [

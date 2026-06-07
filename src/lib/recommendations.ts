@@ -1,77 +1,92 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export interface RecommendedStartup {
+export interface RecommendedOrg {
   id: string;
   name: string;
-  industry: string | null;
-  current_stage: string | null;
-  innovation_category: string | null;
-  funding_requested: number | null;
+  sector: string | null;
+  country: string | null;
+  stage: string | null;
+  funding_required: number | null;
+  short_description: string | null;
+  logo_url: string | null;
+  sdgs: number[] | null;
+  readiness_score: number | null;
+  match_score: number;
   match_reasons: string[];
 }
 
-/** Rule-based recommendations for an investor. */
-export async function recommendStartupsForInvestor(userId: string): Promise<RecommendedStartup[]> {
+export interface RecommendedInvestor {
+  user_id: string;
+  organization_name: string | null;
+  investor_type: string | null;
+  bio: string | null;
+  preferred_sdgs: number[] | null;
+  investment_focus: string[] | null;
+  preferred_countries: string[] | null;
+  min_investment: number | null;
+  max_investment: number | null;
+  match_score: number;
+  match_reasons: string[];
+}
+
+/** Rule-based fallback (instant). AI matching enriches this server-side. */
+export async function recommendOrgsForInvestor(userId: string): Promise<RecommendedOrg[]> {
   const { data: prefs } = await supabase
     .from("investor_profiles")
-    .select("investment_focus, preferred_stages, innovation_categories, min_investment, max_investment")
+    .select("investment_focus, preferred_sdgs, preferred_countries, min_investment, max_investment")
     .eq("user_id", userId)
     .maybeSingle();
 
-  const { data: startups } = await supabase
-    .from("startups")
-    .select("id,name,industry,current_stage,innovation_category,funding_requested,funding_stage")
+  const { data: orgs } = await supabase
+    .from("organizations")
+    .select("id,name,sector,country,stage,funding_required,short_description,logo_url,sdgs,readiness_score")
     .eq("is_published", true);
 
-  if (!startups) return [];
-
+  if (!orgs) return [];
   const focus = prefs?.investment_focus ?? [];
-  const stages = prefs?.preferred_stages ?? [];
-  const cats = prefs?.innovation_categories ?? [];
+  const sdgs = prefs?.preferred_sdgs ?? [];
+  const countries = prefs?.preferred_countries ?? [];
   const min = prefs?.min_investment ?? null;
   const max = prefs?.max_investment ?? null;
 
-  const scored = startups.map((s) => {
+  return orgs.map((o) => {
     const reasons: string[] = [];
-    if (s.industry && focus.includes(s.industry)) reasons.push(`Industry match: ${s.industry}`);
-    if (s.funding_stage && stages.includes(s.funding_stage)) reasons.push(`Stage match: ${s.funding_stage}`);
-    if (s.innovation_category && cats.includes(s.innovation_category))
-      reasons.push(`Category match: ${s.innovation_category}`);
-    if (s.funding_requested && min !== null && max !== null) {
-      if (s.funding_requested >= min && s.funding_requested <= max)
-        reasons.push("Within investment range");
+    let score = 40;
+    if (o.sector && focus.includes(o.sector)) { reasons.push(`Sector match: ${o.sector}`); score += 20; }
+    if (o.country && countries.includes(o.country)) { reasons.push(`Country match: ${o.country}`); score += 15; }
+    const sdgOverlap = (o.sdgs ?? []).filter((s: number) => sdgs.includes(s));
+    if (sdgOverlap.length > 0) { reasons.push(`${sdgOverlap.length} shared SDG${sdgOverlap.length > 1 ? "s" : ""}`); score += sdgOverlap.length * 5; }
+    if (o.funding_required && min !== null && max !== null && o.funding_required >= min && o.funding_required <= max) {
+      reasons.push("Funding within your range"); score += 15;
     }
-    return { ...s, match_reasons: reasons } as RecommendedStartup;
-  });
-
-  return scored.sort((a, b) => b.match_reasons.length - a.match_reasons.length).slice(0, 10);
+    if (o.readiness_score && o.readiness_score >= 70) { reasons.push("High readiness score"); score += 5; }
+    return { ...o, match_score: Math.min(99, score), match_reasons: reasons } as RecommendedOrg;
+  }).sort((a, b) => b.match_score - a.match_score).slice(0, 12);
 }
 
-/** Rule-based recommendations for a mentor. */
-export async function recommendStartupsForMentor(userId: string): Promise<RecommendedStartup[]> {
-  const { data: prefs } = await supabase
-    .from("mentor_profiles")
-    .select("industries, expertise, preferred_categories")
-    .eq("user_id", userId)
+export async function recommendInvestorsForOrg(orgId: string): Promise<RecommendedInvestor[]> {
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("sector,country,sdgs,funding_required")
+    .eq("id", orgId)
     .maybeSingle();
+  if (!org) return [];
 
-  const { data: startups } = await supabase
-    .from("startups")
-    .select("id,name,industry,current_stage,innovation_category,funding_requested")
-    .eq("is_published", true);
+  const { data: investors } = await supabase
+    .from("investor_profiles")
+    .select("user_id,organization_name,investor_type,bio,preferred_sdgs,investment_focus,preferred_countries,min_investment,max_investment");
+  if (!investors) return [];
 
-  if (!startups) return [];
-
-  const industries = prefs?.industries ?? [];
-  const cats = prefs?.preferred_categories ?? [];
-
-  const scored = startups.map((s) => {
+  return investors.map((i) => {
     const reasons: string[] = [];
-    if (s.industry && industries.includes(s.industry)) reasons.push(`Industry match: ${s.industry}`);
-    if (s.innovation_category && cats.includes(s.innovation_category))
-      reasons.push(`Category match: ${s.innovation_category}`);
-    return { ...s, match_reasons: reasons } as RecommendedStartup;
-  });
-
-  return scored.sort((a, b) => b.match_reasons.length - a.match_reasons.length).slice(0, 10);
+    let score = 40;
+    if (org.sector && (i.investment_focus ?? []).includes(org.sector)) { reasons.push(`Funds ${org.sector}`); score += 20; }
+    if (org.country && (i.preferred_countries ?? []).includes(org.country)) { reasons.push(`Works in ${org.country}`); score += 15; }
+    const sdgOverlap = (org.sdgs ?? []).filter((s: number) => (i.preferred_sdgs ?? []).includes(s));
+    if (sdgOverlap.length > 0) { reasons.push(`${sdgOverlap.length} shared SDG${sdgOverlap.length > 1 ? "s" : ""}`); score += sdgOverlap.length * 5; }
+    if (org.funding_required && i.min_investment !== null && i.max_investment !== null && org.funding_required >= i.min_investment! && org.funding_required <= i.max_investment!) {
+      reasons.push("Funding fits range"); score += 15;
+    }
+    return { ...i, match_score: Math.min(99, score), match_reasons: reasons } as RecommendedInvestor;
+  }).sort((a, b) => b.match_score - a.match_score).slice(0, 12);
 }

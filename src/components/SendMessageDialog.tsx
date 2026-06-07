@@ -12,12 +12,12 @@ import { safeErrorMessage } from "@/lib/errors";
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  startupId: string;
-  founderId: string;
-  startupName: string;
+  organizationId?: string | null;
+  recipientId: string;
+  recipientLabel: string;
 }
 
-export function SendMessageDialog({ open, onOpenChange, startupId, founderId, startupName }: Props) {
+export function SendMessageDialog({ open, onOpenChange, organizationId, recipientId, recipientLabel }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [subject, setSubject] = useState("");
@@ -27,18 +27,18 @@ export function SendMessageDialog({ open, onOpenChange, startupId, founderId, st
   const send = async () => {
     if (!user || !body.trim()) return;
     setSending(true);
-    const { error } = await supabase.from("startup_messages").insert({
-      startup_id: startupId,
+    const { error } = await supabase.from("org_messages").insert({
+      organization_id: organizationId ?? null,
       sender_id: user.id,
-      recipient_id: founderId,
+      recipient_id: recipientId,
       subject: subject.trim() || null,
       body: body.trim(),
     });
     setSending(false);
     if (error) {
-      toast({ title: "Could not send message", description: safeErrorMessage(error), variant: "destructive" });
+      toast({ title: "Could not send", description: safeErrorMessage(error), variant: "destructive" });
     } else {
-      toast({ title: "Message sent", description: `Delivered to the ${startupName} team.` });
+      toast({ title: "Message sent", description: `Delivered to ${recipientLabel}.` });
       setSubject(""); setBody("");
       onOpenChange(false);
     }
@@ -48,8 +48,8 @@ export function SendMessageDialog({ open, onOpenChange, startupId, founderId, st
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Message {startupName}</DialogTitle>
-          <DialogDescription>Send a direct message to the founder. They'll get notified instantly.</DialogDescription>
+          <DialogTitle>Message {recipientLabel}</DialogTitle>
+          <DialogDescription>Direct message. They'll get notified instantly.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
@@ -64,7 +64,7 @@ export function SendMessageDialog({ open, onOpenChange, startupId, founderId, st
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={send} disabled={!body.trim() || sending}>{sending ? "Sending..." : "Send Message"}</Button>
+          <Button onClick={send} disabled={!body.trim() || sending}>{sending ? "Sending..." : "Send"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

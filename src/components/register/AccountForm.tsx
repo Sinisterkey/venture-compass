@@ -3,11 +3,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Role, FounderType } from "@/pages/Register";
+import type { Role } from "@/pages/Register";
 
 interface Props {
   role: Role;
-  founderType: FounderType | null;
   fullName: string;
   setFullName: (v: string) => void;
   email: string;
@@ -19,14 +18,9 @@ interface Props {
   onBack: () => void;
 }
 
-export function AccountForm({ role, founderType, fullName, setFullName, email, setEmail, password, setPassword, loading, onSubmit, onBack }: Props) {
+export function AccountForm({ role, fullName, setFullName, email, setEmail, password, setPassword, loading, onSubmit, onBack }: Props) {
   const [showPassword, setShowPassword] = useState(false);
-
-  const roleLabel = role === "founder" && founderType === "student"
-    ? "Student Founder"
-    : role === "founder" && founderType === "independent"
-    ? "Independent Founder"
-    : role.charAt(0).toUpperCase() + role.slice(1);
+  const roleLabel = role === "ngo" ? "NGO / Organization" : "Funder / Investor";
 
   return (
     <>
@@ -41,12 +35,12 @@ export function AccountForm({ role, founderType, fullName, setFullName, email, s
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
-          <Label htmlFor="fullName">Full name</Label>
-          <Input id="fullName" placeholder="Your full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required className="mt-1.5" />
+          <Label htmlFor="fullName">{role === "ngo" ? "Your name (contact person)" : "Full name"}</Label>
+          <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required className="mt-1.5" />
         </div>
         <div>
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1.5" />
+          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1.5" />
         </div>
         <div>
           <Label htmlFor="password">Password</Label>

@@ -1,10 +1,10 @@
 export function StatsSection() {
   const stats = [
-    { value: "250+", label: "Startups" },
-    { value: "80+", label: "Investors" },
-    { value: "120+", label: "Mentors" },
-    { value: "15", label: "Countries" },
-    { value: "30+", label: "Universities" },
+    { value: "AI", label: "Matching engine" },
+    { value: "17", label: "SDGs supported" },
+    { value: "15+", label: "African countries" },
+    { value: "3-tier", label: "Privacy model" },
+    { value: "Trust", label: "Verification system" },
   ];
 
   return (
