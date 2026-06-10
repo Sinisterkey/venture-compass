@@ -86,11 +86,8 @@ export default function OrganizationDetail() {
       <main className="flex-1">
         <div className="relative border-b border-border overflow-hidden">
           <img src={sectorImage(org.sector)} alt="" width={832} height={512} className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-background/88 backdrop-blur-[2px]" />
+          <div className="absolute inset-0 bg-background/90 backdrop-blur-[2px]" />
           <div className="container py-10 relative">
-            <div className="hidden md:block absolute right-8 top-1/2 -translate-y-1/2 h-28 w-44 rounded-xl overflow-hidden border border-border shadow-lg rotate-1">
-              <img src={sectorImage(org.sector)} alt={org.sector || "Field work"} loading="lazy" width={832} height={512} className="h-full w-full object-cover" />
-            </div>
             <div className="flex items-start gap-5 flex-wrap">
               <div className="h-24 w-24 rounded-xl bg-card border border-border overflow-hidden flex items-center justify-center shrink-0">
                 {org.logo_url ? <img src={org.logo_url} alt="" className="h-full w-full object-cover" /> : <Building2 className="h-12 w-12 text-primary" />}
