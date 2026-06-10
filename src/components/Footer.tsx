@@ -3,10 +3,10 @@ import { Rocket } from "lucide-react";
 
 const footerLinks = {
   Platform: [
-    { label: "Discover Startups", path: "/discover" },
-    { label: "For Investors", path: "/register" },
-    { label: "For Mentors", path: "/register" },
-    { label: "Universities", path: "/register" },
+    { label: "Discover Organizations", path: "/discover" },
+    { label: "Browse Funders", path: "/investors" },
+    { label: "For NGOs", path: "/register" },
+    { label: "For Funders", path: "/register" },
   ],
   Company: [
     { label: "About", path: "/about" },
@@ -37,7 +37,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-sm text-secondary-foreground/70 max-w-xs leading-relaxed">
-              Connecting African innovation with global capital. The premier platform for startups, investors, mentors, and universities across the continent.
+              Using AI to connect African NGOs, community organizations, and social enterprises with the funders most aligned with their mission.
             </p>
           </div>
 
@@ -66,7 +66,7 @@ export function Footer() {
             © {new Date().getFullYear()} LaunchPad Africa. All rights reserved.
           </p>
           <p className="text-xs text-secondary-foreground/50">
-            Building the future of African innovation 🌍
+            Building trusted funding partnerships across Africa 🌍
           </p>
         </div>
       </div>
