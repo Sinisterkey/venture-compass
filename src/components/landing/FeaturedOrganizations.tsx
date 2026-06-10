@@ -4,6 +4,7 @@ import { Building2, ArrowRight, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { AIScoreBadge } from "@/components/AIScoreBadge";
+import { sectorImage } from "@/lib/sectorImages";
 import { stageLabel } from "@/lib/labels";
 
 interface Org {
@@ -31,7 +32,11 @@ export function FeaturedOrganizations() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {orgs.map((o) => (
             <Link key={o.id} to={`/organizations/${o.id}`} className="group rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all">
-              <div className="h-20 bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 relative">
+              <div className="h-28 relative">
+                <div className="absolute inset-0 overflow-hidden">
+                  <img src={sectorImage(o.sector)} alt={o.sector || "Organization"} loading="lazy" width={832} height={512} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                </div>
                 <div className="absolute -bottom-5 left-4 h-12 w-12 rounded-lg bg-card border-2 border-card shadow-md overflow-hidden flex items-center justify-center">
                   {o.logo_url ? <img src={o.logo_url} alt="" className="h-full w-full object-cover" /> : <Building2 className="h-6 w-6 text-primary" />}
                 </div>
