@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { SECTORS, COUNTRIES, SDGS, ORG_STAGE_OPTIONS, stageLabel } from "@/lib/labels";
 import { Search, Filter, Building2, MapPin, Target } from "lucide-react";
+import { sectorImage } from "@/lib/sectorImages";
 import { AIScoreBadge } from "@/components/AIScoreBadge";
 
 interface Org {
@@ -97,17 +98,14 @@ export default function Discover() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {orgs.map((o) => (
                 <Link key={o.id} to={`/organizations/${o.id}`} className="group rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all">
-                  <div className="h-24 bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 relative">
-                    {o.logo_url && (
-                      <div className="absolute -bottom-6 left-5 h-14 w-14 rounded-lg bg-card border-2 border-card shadow-md overflow-hidden">
-                        <img src={o.logo_url} alt="" className="h-full w-full object-cover" />
-                      </div>
-                    )}
-                    {!o.logo_url && (
-                      <div className="absolute -bottom-6 left-5 h-14 w-14 rounded-lg bg-card border-2 border-card shadow-md flex items-center justify-center">
-                        <Building2 className="h-7 w-7 text-primary" />
-                      </div>
-                    )}
+                  <div className="h-32 relative">
+                    <div className="absolute inset-0 overflow-hidden">
+                      <img src={sectorImage(o.sector)} alt={o.sector || "Organization"} loading="lazy" width={832} height={512} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                    </div>
+                    <div className="absolute -bottom-6 left-5 h-14 w-14 rounded-lg bg-card border-2 border-card shadow-md overflow-hidden flex items-center justify-center">
+                      {o.logo_url ? <img src={o.logo_url} alt="" className="h-full w-full object-cover" /> : <Building2 className="h-7 w-7 text-primary" />}
+                    </div>
                     {o.readiness_score !== null && (
                       <div className="absolute top-3 right-3">
                         <AIScoreBadge score={o.readiness_score} size="sm" />

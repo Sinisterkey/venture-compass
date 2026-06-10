@@ -98,6 +98,8 @@ export default function Dashboard() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!user) return <Navigate to="/login" replace />;
+  // Admins manage the platform — they don't have an NGO/investor workspace
+  if (roles.includes("admin") && !isNgo && !isInvestor) return <Navigate to="/admin" replace />;
 
   const primaryRole = isNgo ? "NGO" : isInvestor ? "Funder" : "Member";
 

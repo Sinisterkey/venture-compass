@@ -14,6 +14,7 @@ import { AIInsightCard } from "@/components/AIInsightCard";
 import { AIScoreBadge } from "@/components/AIScoreBadge";
 import { ConnectionRequestDialog } from "@/components/ConnectionRequestDialog";
 import { SendMessageDialog } from "@/components/SendMessageDialog";
+import { sectorImage } from "@/lib/sectorImages";
 
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -83,8 +84,10 @@ export default function OrganizationDetail() {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1">
-        <div className="border-b border-border bg-gradient-to-br from-primary/10 via-background to-background">
-          <div className="container py-10">
+        <div className="relative border-b border-border overflow-hidden">
+          <img src={sectorImage(org.sector)} alt="" width={832} height={512} className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-background/90 backdrop-blur-[2px]" />
+          <div className="container py-10 relative">
             <div className="flex items-start gap-5 flex-wrap">
               <div className="h-24 w-24 rounded-xl bg-card border border-border overflow-hidden flex items-center justify-center shrink-0">
                 {org.logo_url ? <img src={org.logo_url} alt="" className="h-full w-full object-cover" /> : <Building2 className="h-12 w-12 text-primary" />}
