@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, Sparkles, LogOut, Settings, Shield, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,7 +15,14 @@ const baseLinks = [
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, roles, signOut, loading } = useAuth();
+
+  const handleSignOut = async () => {
+    setMobileOpen(false);
+    await signOut();
+    navigate("/login", { replace: true });
+  };
 
   const isAdmin = roles.includes("admin");
   const isLoggedIn = !!user;
@@ -60,7 +67,7 @@ export function Navbar() {
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/settings" className="gap-2"><Settings className="h-4 w-4" /> Settings</Link>
               </Button>
-              <Button variant="outline" size="sm" onClick={signOut} className="gap-2">
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-2">
                 <LogOut className="h-4 w-4" /> Sign out
               </Button>
             </>
@@ -92,7 +99,7 @@ export function Navbar() {
             )}
             <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border">
               {isLoggedIn ? (
-                <Button variant="outline" size="sm" className="flex-1" onClick={() => { signOut(); setMobileOpen(false); }}>Sign out</Button>
+                <Button variant="outline" size="sm" className="flex-1" onClick={handleSignOut}>Sign out</Button>
               ) : (
                 <>
                   <Button variant="outline" size="sm" className="flex-1" asChild><Link to="/login" onClick={() => setMobileOpen(false)}>Log in</Link></Button>
