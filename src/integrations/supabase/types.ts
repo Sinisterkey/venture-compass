@@ -61,6 +61,68 @@ export type Database = {
           },
         ]
       }
+      impact_updates: {
+        Row: {
+          amount_spent: number | null
+          author_id: string
+          beneficiaries_count: number | null
+          created_at: string
+          currency: string | null
+          id: string
+          milestone_type: string | null
+          narrative: string | null
+          organization_id: string
+          period_end: string | null
+          period_start: string | null
+          photos: string[] | null
+          receipts: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount_spent?: number | null
+          author_id: string
+          beneficiaries_count?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          milestone_type?: string | null
+          narrative?: string | null
+          organization_id: string
+          period_end?: string | null
+          period_start?: string | null
+          photos?: string[] | null
+          receipts?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount_spent?: number | null
+          author_id?: string
+          beneficiaries_count?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          milestone_type?: string | null
+          narrative?: string | null
+          organization_id?: string
+          period_end?: string | null
+          period_start?: string | null
+          photos?: string[] | null
+          receipts?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impact_updates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investor_profiles: {
         Row: {
           bio: string | null
@@ -495,6 +557,59 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      proposals: {
+        Row: {
+          created_at: string
+          deadline: string | null
+          funder_name: string | null
+          id: string
+          organization_id: string
+          owner_id: string
+          sections: Json
+          status: string
+          template_key: string
+          title: string
+          total_words: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deadline?: string | null
+          funder_name?: string | null
+          id?: string
+          organization_id: string
+          owner_id: string
+          sections?: Json
+          status?: string
+          template_key: string
+          title: string
+          total_words?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deadline?: string | null
+          funder_name?: string | null
+          id?: string
+          organization_id?: string
+          owner_id?: string
+          sections?: Json
+          status?: string
+          template_key?: string
+          title?: string
+          total_words?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
