@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Search, Briefcase, MapPin } from "lucide-react";
 import { investorTypeLabel } from "@/lib/labels";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { funderImage, sectorImage } from "@/lib/sectorImages";
 
 interface Inv {
   user_id: string;
