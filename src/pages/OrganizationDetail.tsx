@@ -146,6 +146,8 @@ export default function OrganizationDetail() {
               </div>
             )}
 
+            <ImpactLedger organizationId={id!} isOwner={isOwner} />
+
             {(org.sdgs ?? []).length > 0 && (
               <div className="rounded-xl border border-border bg-card p-6">
                 <h2 className="font-display font-semibold mb-3">Sustainable Development Goals</h2>
