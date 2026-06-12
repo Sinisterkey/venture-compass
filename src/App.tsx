@@ -19,6 +19,8 @@ import InvestorDetail from "./pages/InvestorDetail";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
+import Proposals from "./pages/Proposals";
+import ProposalEditor from "./pages/ProposalEditor";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +46,8 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/create-organization" element={<CreateOrganization />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/proposals" element={<Proposals />} />
+              <Route path="/proposals/:id" element={<ProposalEditor />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </CurrencyProvider>

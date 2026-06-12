@@ -15,6 +15,7 @@ import { AIScoreBadge } from "@/components/AIScoreBadge";
 import { ConnectionRequestDialog } from "@/components/ConnectionRequestDialog";
 import { SendMessageDialog } from "@/components/SendMessageDialog";
 import { sectorImage } from "@/lib/sectorImages";
+import { ImpactLedger } from "@/components/ImpactLedger";
 
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -144,6 +145,8 @@ export default function OrganizationDetail() {
                 <p className="text-xs text-muted-foreground max-w-md mx-auto mt-1">Budget breakdowns, project plans, team details, and impact reports are visible only after the NGO accepts your connection request.</p>
               </div>
             )}
+
+            <ImpactLedger organizationId={id!} isOwner={isOwner} />
 
             {(org.sdgs ?? []).length > 0 && (
               <div className="rounded-xl border border-border bg-card p-6">
