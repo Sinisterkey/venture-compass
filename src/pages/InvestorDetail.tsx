@@ -10,6 +10,7 @@ import { investorTypeLabel, sdgLabel } from "@/lib/labels";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Briefcase, MapPin, Mail, Loader2 } from "lucide-react";
 import { SendMessageDialog } from "@/components/SendMessageDialog";
+import { sectorImage, funderImage } from "@/lib/sectorImages";
 
 export default function InvestorDetail() {
   const { id } = useParams<{ id: string }>();
