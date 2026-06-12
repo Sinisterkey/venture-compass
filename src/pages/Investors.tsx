@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Search, Briefcase, MapPin } from "lucide-react";
 import { investorTypeLabel } from "@/lib/labels";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { funderImage, sectorImage } from "@/lib/sectorImages";
 
 interface Inv {
   user_id: string;
@@ -63,27 +64,30 @@ export default function Investors() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((i) => {
+            {filtered.map((i, idx) => {
               const p = profiles[i.user_id];
               const name = i.organization_name || p?.full_name || "Funder";
+              const cover = (i.investment_focus && i.investment_focus[0]) ? sectorImage(i.investment_focus[0]) : funderImage(idx);
               return (
-                <Link key={i.user_id} to={`/investors/${i.user_id}`} className="group rounded-xl border border-border bg-card p-5 hover:border-primary/40 hover:shadow-md transition-all">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shrink-0">
-                      {p?.avatar_url ? <img src={p.avatar_url} alt="" className="h-full w-full object-cover rounded-lg" /> : <Briefcase className="h-6 w-6 text-primary" />}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-display font-semibold text-sm group-hover:text-primary transition-colors truncate">{name}</p>
-                      <p className="text-xs text-muted-foreground">{investorTypeLabel(i.investor_type)}</p>
+                <Link key={i.user_id} to={`/investors/${i.user_id}`} className="group rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-md transition-all">
+                  <div className="h-32 relative overflow-hidden">
+                    <img src={cover} alt={name} loading="lazy" width={832} height={512} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                    <div className="absolute -bottom-5 left-4 h-12 w-12 rounded-lg bg-card border-2 border-card shadow-md overflow-hidden flex items-center justify-center">
+                      {p?.avatar_url ? <img src={p.avatar_url} alt="" className="h-full w-full object-cover" /> : <Briefcase className="h-6 w-6 text-primary" />}
                     </div>
                   </div>
-                  {i.bio && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{i.bio}</p>}
-                  <div className="flex flex-wrap gap-1">
-                    {(i.investment_focus ?? []).slice(0, 3).map((s) => <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>)}
+                  <div className="p-5 pt-7">
+                    <p className="font-display font-semibold text-sm group-hover:text-primary transition-colors truncate">{name}</p>
+                    <p className="text-xs text-muted-foreground">{investorTypeLabel(i.investor_type)}</p>
+                    {i.bio && <p className="text-xs text-muted-foreground line-clamp-2 mt-2">{i.bio}</p>}
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {(i.investment_focus ?? []).slice(0, 3).map((s) => <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>)}
+                    </div>
+                    {(i.min_investment !== null && i.max_investment !== null) && (
+                      <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">{format(i.min_investment!)} – {format(i.max_investment!)}</p>
+                    )}
                   </div>
-                  {(i.min_investment !== null && i.max_investment !== null) && (
-                    <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">{format(i.min_investment!)} – {format(i.max_investment!)}</p>
-                  )}
                 </Link>
               );
             })}

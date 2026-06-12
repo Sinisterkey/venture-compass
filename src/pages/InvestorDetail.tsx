@@ -10,6 +10,7 @@ import { investorTypeLabel, sdgLabel } from "@/lib/labels";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Briefcase, MapPin, Mail, Loader2 } from "lucide-react";
 import { SendMessageDialog } from "@/components/SendMessageDialog";
+import { sectorImage, funderImage } from "@/lib/sectorImages";
 
 export default function InvestorDetail() {
   const { id } = useParams<{ id: string }>();
@@ -42,11 +43,13 @@ export default function InvestorDetail() {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1">
-        <div className="border-b border-border bg-gradient-to-br from-accent/10 via-background to-background">
-          <div className="container py-10">
+        <div className="relative border-b border-border overflow-hidden">
+          <img src={inv?.investment_focus?.[0] ? sectorImage(inv.investment_focus[0]) : funderImage(0)} alt="" width={1280} height={400} className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-background/85 backdrop-blur-[2px]" />
+          <div className="container py-10 relative">
             <div className="flex items-start gap-5 flex-wrap">
-              <div className="h-20 w-20 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="h-full w-full object-cover rounded-xl" /> : <Briefcase className="h-10 w-10 text-primary" />}
+              <div className="h-20 w-20 rounded-xl bg-card border border-border overflow-hidden flex items-center justify-center shrink-0">
+                {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" /> : <Briefcase className="h-10 w-10 text-primary" />}
               </div>
               <div className="flex-1 min-w-0">
                 <h1 className="font-display text-3xl font-bold">{name}</h1>
