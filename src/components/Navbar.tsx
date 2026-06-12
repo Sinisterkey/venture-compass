@@ -55,6 +55,9 @@ export function Navbar() {
           {isLoggedIn && (
             <Link to="/dashboard" className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname === "/dashboard" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>Dashboard</Link>
           )}
+          {isLoggedIn && roles.includes("ngo") && (
+            <Link to="/proposals" className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname.startsWith("/proposals") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>Proposals</Link>
+          )}
           {isAdmin && (
             <Link to="/admin" className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname === "/admin" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>Admin</Link>
           )}

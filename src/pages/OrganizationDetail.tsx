@@ -15,6 +15,7 @@ import { AIScoreBadge } from "@/components/AIScoreBadge";
 import { ConnectionRequestDialog } from "@/components/ConnectionRequestDialog";
 import { SendMessageDialog } from "@/components/SendMessageDialog";
 import { sectorImage } from "@/lib/sectorImages";
+import { ImpactLedger } from "@/components/ImpactLedger";
 
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
