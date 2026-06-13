@@ -15,7 +15,7 @@ import { GRANT_TEMPLATES, getTemplate } from "@/lib/grantTemplates";
 import { Plus, FileText, Calendar, Loader2 } from "lucide-react";
 
 export default function Proposals() {
-  const { user, roles, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [items, setItems] = useState<any[]>([]);
@@ -42,7 +42,6 @@ export default function Proposals() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!user) return <Navigate to="/login" replace />;
-  if (!roles.includes("ngo")) return <Navigate to="/dashboard" replace />;
 
   const create = async () => {
     if (!orgId || !title) return;
