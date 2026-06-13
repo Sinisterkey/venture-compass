@@ -15,7 +15,7 @@ import { GRANT_TEMPLATES, getTemplate } from "@/lib/grantTemplates";
 import { Plus, FileText, Calendar, Loader2 } from "lucide-react";
 
 export default function Proposals() {
-  const { user, roles, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [items, setItems] = useState<any[]>([]);
