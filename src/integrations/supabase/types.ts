@@ -564,10 +564,13 @@ export type Database = {
           deadline: string | null
           funder_name: string | null
           id: string
+          is_published: boolean
           organization_id: string
           owner_id: string
+          published_at: string | null
           sections: Json
           status: string
+          summary: string | null
           template_key: string
           title: string
           total_words: number | null
@@ -578,10 +581,13 @@ export type Database = {
           deadline?: string | null
           funder_name?: string | null
           id?: string
+          is_published?: boolean
           organization_id: string
           owner_id: string
+          published_at?: string | null
           sections?: Json
           status?: string
+          summary?: string | null
           template_key: string
           title: string
           total_words?: number | null
@@ -592,10 +598,13 @@ export type Database = {
           deadline?: string | null
           funder_name?: string | null
           id?: string
+          is_published?: boolean
           organization_id?: string
           owner_id?: string
+          published_at?: string | null
           sections?: Json
           status?: string
+          summary?: string | null
           template_key?: string
           title?: string
           total_words?: number | null

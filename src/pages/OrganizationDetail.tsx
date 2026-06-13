@@ -16,6 +16,7 @@ import { ConnectionRequestDialog } from "@/components/ConnectionRequestDialog";
 import { SendMessageDialog } from "@/components/SendMessageDialog";
 import { sectorImage } from "@/lib/sectorImages";
 import { ImpactLedger } from "@/components/ImpactLedger";
+import { OrgProposalsList } from "@/components/OrgProposalsList";
 
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -145,6 +146,8 @@ export default function OrganizationDetail() {
                 <p className="text-xs text-muted-foreground max-w-md mx-auto mt-1">Budget breakdowns, project plans, team details, and impact reports are visible only after the NGO accepts your connection request.</p>
               </div>
             )}
+
+            <OrgProposalsList organizationId={id!} organizationName={org.name} isOwner={isOwner} />
 
             <ImpactLedger organizationId={id!} isOwner={isOwner} />
 

@@ -7,12 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getTemplate, countWords } from "@/lib/grantTemplates";
 import { exportProposalPDF, exportProposalDOCX } from "@/lib/exportProposal";
-import { Loader2, Sparkles, Save, FileDown, ArrowLeft, Trash2 } from "lucide-react";
+import { Loader2, Sparkles, Save, FileDown, ArrowLeft, Trash2, Wand2, Globe } from "lucide-react";
 
 export default function ProposalEditor() {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +27,9 @@ export default function ProposalEditor() {
   const [sections, setSections] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [refineOpen, setRefineOpen] = useState<string | null>(null);
+  const [refineInstr, setRefineInstr] = useState("");
+  const [refining, setRefining] = useState(false);
 
   useEffect(() => {
     if (!id || !user) return;
@@ -71,6 +77,29 @@ export default function ProposalEditor() {
     }
   };
 
+  const refine = async () => {
+    if (!refineOpen) return;
+    const s = template.sections.find((x) => x.key === refineOpen)!;
+    setRefining(true);
+    const { data, error } = await supabase.functions.invoke("ai-grant-writer", {
+      body: { org, template: { funder: template.funder }, section: { title: s.title, guidance: s.guidance }, wordLimit: s.wordLimit, existing: sections[refineOpen] || "", mode: "refine", instruction: refineInstr },
+    });
+    setRefining(false);
+    if (error) { toast({ title: "AI error", description: error.message, variant: "destructive" }); return; }
+    setSections((prev) => ({ ...prev, [refineOpen]: data?.text ?? prev[refineOpen] }));
+    setRefineOpen(null);
+    setRefineInstr("");
+    toast({ title: "Refined" });
+  };
+
+  const togglePublish = async (v: boolean) => {
+    await save();
+    const { error } = await supabase.from("proposals").update({ is_published: v, published_at: v ? new Date().toISOString() : null, status: v ? "published" : "draft" }).eq("id", p.id);
+    if (error) { toast({ title: "Could not publish", description: error.message, variant: "destructive" }); return; }
+    setP({ ...p, is_published: v, published_at: v ? new Date().toISOString() : null });
+    toast({ title: v ? "Published to organization" : "Unpublished" });
+  };
+
   const remove = async () => {
     if (!confirm("Delete this proposal?")) return;
     await supabase.from("proposals").delete().eq("id", p.id);
@@ -89,11 +118,19 @@ export default function ProposalEditor() {
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-primary font-semibold uppercase">{template.funder}</p>
-                <h1 className="font-display text-2xl font-bold truncate">{p.title}</h1>
-                <p className="text-xs text-muted-foreground mt-1">{template.name}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="font-display text-2xl font-bold truncate">{p.title}</h1>
+                  {p.is_published && <Badge className="gap-1"><Globe className="h-3 w-3" /> Published</Badge>}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">{template.name} · {org?.name}</p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={fillAll} className="gap-2"><Sparkles className="h-4 w-4" /> AI fill all empty</Button>
+              <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="pub" className="text-xs cursor-pointer">Publish to organization</Label>
+                  <Switch id="pub" checked={!!p.is_published} onCheckedChange={togglePublish} />
+                </div>
+                <Button variant="outline" size="sm" onClick={fillAll} className="gap-2"><Sparkles className="h-4 w-4" /> AI fill empty</Button>
                 <Button variant="outline" size="sm" onClick={() => exportProposalPDF(proposalForExport, template)} className="gap-2"><FileDown className="h-4 w-4" /> PDF</Button>
                 <Button variant="outline" size="sm" onClick={() => exportProposalDOCX(proposalForExport, template)} className="gap-2"><FileDown className="h-4 w-4" /> DOCX</Button>
                 <Button size="sm" onClick={save} disabled={saving} className="gap-2">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save</Button>
@@ -121,9 +158,14 @@ export default function ProposalEditor() {
                     <h2 className="font-display font-semibold">{s.title}</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">{s.guidance}</p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => aiFill(s.key)} disabled={busy === s.key} className="gap-1 shrink-0">
-                    {busy === s.key ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} AI draft
-                  </Button>
+                  <div className="flex gap-2 shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => aiFill(s.key)} disabled={busy === s.key} className="gap-1">
+                      {busy === s.key ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} AI draft
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => { setRefineOpen(s.key); setRefineInstr(""); }} disabled={!value.trim()} className="gap-1">
+                      <Wand2 className="h-3 w-3" /> Refine
+                    </Button>
+                  </div>
                 </div>
                 <Textarea value={value} onChange={(e) => setSections((prev) => ({ ...prev, [s.key]: e.target.value }))} rows={8} className="mt-3 font-sans text-sm leading-relaxed" placeholder="Write here, or click AI draft to generate from your organization profile..." />
                 <div className="flex items-center gap-3 mt-2">
@@ -136,6 +178,28 @@ export default function ProposalEditor() {
         </div>
       </main>
       <Footer />
+
+      <Dialog open={!!refineOpen} onOpenChange={(v) => !v && setRefineOpen(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Wand2 className="h-5 w-5 text-primary" /> Refine with AI</DialogTitle>
+            <DialogDescription>Tell the AI how to rewrite this section. Facts are preserved.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label className="text-xs">Your instruction</Label>
+            <Textarea rows={4} value={refineInstr} onChange={(e) => setRefineInstr(e.target.value)} placeholder="e.g. Make it more concise, emphasise women & girls, add stronger numbers, more donor-friendly tone..." />
+            <div className="flex flex-wrap gap-1.5">
+              {["Make it more concise", "Stronger outcomes & numbers", "More donor-friendly tone", "Emphasise women & girls", "Simplify language"].map((q) => (
+                <Button key={q} type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => setRefineInstr(q)}>{q}</Button>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRefineOpen(null)}>Cancel</Button>
+            <Button onClick={refine} disabled={refining || !refineInstr.trim()}>{refining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />} Refine</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

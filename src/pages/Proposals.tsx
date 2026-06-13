@@ -91,13 +91,16 @@ export default function Proposals() {
           <div className="grid md:grid-cols-2 gap-4 mb-10">
             {items.map((p) => {
               const tpl = getTemplate(p.template_key);
+              const orgName = orgs.find((o) => o.id === p.organization_id)?.name;
               return (
                 <Link key={p.id} to={`/proposals/${p.id}`} className="rounded-xl border border-border bg-card p-5 hover:border-primary/40 hover:shadow-md transition-all">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <p className="font-display font-semibold">{p.title}</p>
-                    <Badge variant={p.status === "draft" ? "secondary" : "default"} className="capitalize text-[10px]">{p.status}</Badge>
+                    {p.is_published
+                      ? <Badge className="text-[10px]">Published</Badge>
+                      : <Badge variant="secondary" className="capitalize text-[10px]">{p.status}</Badge>}
                   </div>
-                  <p className="text-xs text-muted-foreground">{tpl?.funder ?? p.funder_name}</p>
+                  <p className="text-xs text-muted-foreground">{tpl?.funder ?? p.funder_name}{orgName && <> · {orgName}</>}</p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
                     <span>{p.total_words ?? 0} words</span>
                     {p.deadline && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {new Date(p.deadline).toLocaleDateString()}</span>}
