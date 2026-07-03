@@ -21,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
 import Proposals from "./pages/Proposals";
 import ProposalEditor from "./pages/ProposalEditor";
+import FundingIntelligence from "./pages/FundingIntelligence";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/admin" element={<Admin />} />
               <Route path="/proposals" element={<Proposals />} />
               <Route path="/proposals/:id" element={<ProposalEditor />} />
+              <Route path="/funding-intelligence" element={<FundingIntelligence />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </CurrencyProvider>

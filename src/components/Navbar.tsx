@@ -56,7 +56,10 @@ export function Navbar() {
             <Link to="/dashboard" className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname === "/dashboard" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>Dashboard</Link>
           )}
           {isLoggedIn && roles.includes("ngo") && (
-            <Link to="/proposals" className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname.startsWith("/proposals") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>Proposals</Link>
+            <>
+              <Link to="/proposals" className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname.startsWith("/proposals") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>Proposals</Link>
+              <Link to="/funding-intelligence" className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname.startsWith("/funding-intelligence") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>Funding AI</Link>
+            </>
           )}
           {isAdmin && (
             <Link to="/admin" className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname === "/admin" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>Admin</Link>
