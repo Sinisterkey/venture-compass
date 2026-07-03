@@ -61,6 +61,129 @@ export type Database = {
           },
         ]
       }
+      funding_matches: {
+        Row: {
+          computed_at: string
+          created_at: string
+          gaps: string[] | null
+          id: string
+          is_dismissed: boolean | null
+          is_saved: boolean | null
+          opportunity_id: string
+          organization_id: string
+          owner_id: string
+          reasons: string[] | null
+          score: number
+          updated_at: string
+        }
+        Insert: {
+          computed_at?: string
+          created_at?: string
+          gaps?: string[] | null
+          id?: string
+          is_dismissed?: boolean | null
+          is_saved?: boolean | null
+          opportunity_id: string
+          organization_id: string
+          owner_id: string
+          reasons?: string[] | null
+          score: number
+          updated_at?: string
+        }
+        Update: {
+          computed_at?: string
+          created_at?: string
+          gaps?: string[] | null
+          id?: string
+          is_dismissed?: boolean | null
+          is_saved?: boolean | null
+          opportunity_id?: string
+          organization_id?: string
+          owner_id?: string
+          reasons?: string[] | null
+          score?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_matches_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "funding_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_matches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_opportunities: {
+        Row: {
+          beneficiary_types: string[] | null
+          countries: string[] | null
+          created_at: string
+          currency: string | null
+          deadline: string | null
+          funder: string
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          max_amount: number | null
+          min_amount: number | null
+          sdgs: number[] | null
+          sectors: string[] | null
+          source: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          beneficiary_types?: string[] | null
+          countries?: string[] | null
+          created_at?: string
+          currency?: string | null
+          deadline?: string | null
+          funder: string
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          max_amount?: number | null
+          min_amount?: number | null
+          sdgs?: number[] | null
+          sectors?: string[] | null
+          source?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          beneficiary_types?: string[] | null
+          countries?: string[] | null
+          created_at?: string
+          currency?: string | null
+          deadline?: string | null
+          funder?: string
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          max_amount?: number | null
+          min_amount?: number | null
+          sdgs?: number[] | null
+          sectors?: string[] | null
+          source?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
       impact_updates: {
         Row: {
           amount_spent: number | null
