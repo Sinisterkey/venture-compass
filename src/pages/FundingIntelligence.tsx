@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AIScoreBadge } from "@/components/AIScoreBadge";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, ExternalLink, Bookmark, BookmarkCheck, X, Calendar, Building2, Target } from "lucide-react";
+import { Loader2, ExternalLink, Bookmark, BookmarkCheck, X } from "lucide-react";
+import { MagnifyingGlass, Sparkle, Compass, Buildings, Target, CalendarBlank, DownloadSimple } from "@phosphor-icons/react";
 import { Link, Navigate } from "react-router-dom";
 
 type Org = { id: string; name: string; sector: string | null; country: string | null };
@@ -35,6 +36,7 @@ export default function FundingIntelligence() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [busy, setBusy] = useState(false);
   const [running, setRunning] = useState(false);
+  const [ingesting, setIngesting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -78,6 +80,13 @@ export default function FundingIntelligence() {
     await supabase.from("funding_matches").update({ is_dismissed: true }).eq("id", m.id);
     loadMatches();
   }
+  async function refreshSources() {
+    setIngesting(true);
+    const { data, error } = await supabase.functions.invoke("ingest-funding-sources");
+    setIngesting(false);
+    if (error) return toast({ title: "Refresh failed", description: error.message, variant: "destructive" });
+    toast({ title: "Live sources refreshed", description: `Added ${data?.inserted ?? 0}, updated ${data?.updated ?? 0} opportunities from ReliefWeb.` });
+  }
 
   if (loading) return <div className="min-h-screen grid place-items-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   if (!user) return <Navigate to="/login" replace />;
@@ -91,22 +100,26 @@ export default function FundingIntelligence() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-primary mb-2">
-              <Sparkles className="h-3.5 w-3.5" /> Funding Intelligence
+              <Compass weight="duotone" className="h-4 w-4" /> Funding Intelligence
             </div>
             <h1 className="font-display text-4xl font-bold">Live funding matches for your organization</h1>
             <p className="text-muted-foreground mt-2 max-w-2xl">
-              We continuously scan verified funders (USAID, Gates, GIZ, EU, World Bank, Mastercard Foundation and more) and score every opportunity against your organization's mission, sector, SDGs and country.
+              We continuously scan verified funders (USAID, Gates, GIZ, EU, World Bank, Mastercard Foundation, UN OCHA ReliefWeb and more) and score every opportunity against your organization's mission, sector, SDGs and country.
             </p>
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center">
             <Select value={orgId} onValueChange={setOrgId}>
               <SelectTrigger className="min-w-[220px]"><SelectValue placeholder="Choose an organization" /></SelectTrigger>
               <SelectContent>
                 {orgs.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Button variant="outline" onClick={refreshSources} disabled={ingesting} className="gap-2">
+              {ingesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <DownloadSimple weight="duotone" className="h-4 w-4" />}
+              {ingesting ? "Fetching…" : "Refresh live sources"}
+            </Button>
             <Button onClick={discover} disabled={!orgId || running} className="gap-2">
-              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <MagnifyingGlass weight="duotone" className="h-4 w-4" />}
               {running ? "Scanning…" : "Run AI Scan"}
             </Button>
           </div>
@@ -114,7 +127,7 @@ export default function FundingIntelligence() {
 
         {orgs.length === 0 && (
           <Card className="p-10 text-center">
-            <Building2 className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+            <Buildings weight="duotone" className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
             <p className="font-semibold mb-2">You don't have an organization yet</p>
             <p className="text-sm text-muted-foreground mb-4">Create one so we can start matching you with funders.</p>
             <Button asChild><Link to="/create-organization">Create organization</Link></Button>
@@ -123,7 +136,7 @@ export default function FundingIntelligence() {
 
         {orgs.length > 0 && visible.length === 0 && !busy && (
           <Card className="p-10 text-center border-dashed">
-            <Target className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+            <Target weight="duotone" className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
             <p className="font-semibold mb-2">No matches computed yet</p>
             <p className="text-sm text-muted-foreground mb-4">Click <b>Run AI Scan</b> to score your organization against the funder database.</p>
           </Card>
@@ -156,7 +169,7 @@ export default function FundingIntelligence() {
                       <Badge variant="secondary">{m.opportunity.currency ?? "USD"} {m.opportunity.min_amount.toLocaleString()}–{m.opportunity.max_amount.toLocaleString()}</Badge>
                     )}
                     {m.opportunity.deadline && (
-                      <Badge variant="outline" className="gap-1"><Calendar className="h-3 w-3" /> Deadline {new Date(m.opportunity.deadline).toLocaleDateString()}</Badge>
+                      <Badge variant="outline" className="gap-1"><CalendarBlank weight="duotone" className="h-3 w-3" /> Deadline {new Date(m.opportunity.deadline).toLocaleDateString()}</Badge>
                     )}
                     {m.opportunity.sectors?.slice(0, 4).map((s) => <Badge key={s} variant="outline">{s}</Badge>)}
                   </div>
