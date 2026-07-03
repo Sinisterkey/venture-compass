@@ -169,7 +169,7 @@ export default function FundingIntelligence() {
                       <Badge variant="secondary">{m.opportunity.currency ?? "USD"} {m.opportunity.min_amount.toLocaleString()}–{m.opportunity.max_amount.toLocaleString()}</Badge>
                     )}
                     {m.opportunity.deadline && (
-                      <Badge variant="outline" className="gap-1"><Calendar className="h-3 w-3" /> Deadline {new Date(m.opportunity.deadline).toLocaleDateString()}</Badge>
+                      <Badge variant="outline" className="gap-1"><CalendarBlank weight="duotone" className="h-3 w-3" /> Deadline {new Date(m.opportunity.deadline).toLocaleDateString()}</Badge>
                     )}
                     {m.opportunity.sectors?.slice(0, 4).map((s) => <Badge key={s} variant="outline">{s}</Badge>)}
                   </div>
