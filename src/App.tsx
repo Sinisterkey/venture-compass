@@ -22,6 +22,7 @@ import Onboarding from "./pages/Onboarding";
 import Proposals from "./pages/Proposals";
 import ProposalEditor from "./pages/ProposalEditor";
 import FundingIntelligence from "./pages/FundingIntelligence";
+import OAuthConsent from "./pages/OAuthConsent";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/proposals" element={<Proposals />} />
               <Route path="/proposals/:id" element={<ProposalEditor />} />
               <Route path="/funding-intelligence" element={<FundingIntelligence />} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </CurrencyProvider>
