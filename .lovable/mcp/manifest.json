@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://iaugaafivggkadlojoqu.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "launchpad-africa-mcp",
+      "version": "0.1.0",
+      "title": "LaunchPad Africa"
+    },
+    "tools": [
+      {
+        "name": "search_organizations",
+        "title": "Search organizations",
+        "description": "Search public/verified organizations on LaunchPad Africa by name, sector, or country.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Free-text search over name and mission."
+            },
+            "sector": {
+              "type": "string"
+            },
+            "country": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_funding_opportunities",
+        "title": "List funding opportunities",
+        "description": "List active funding opportunities on LaunchPad Africa. Optionally filter by sector, country, or search text in title/summary.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sector": {
+              "type": "string",
+              "description": "Filter by sector (e.g. 'WASH', 'Agriculture', 'Health')."
+            },
+            "country": {
+              "type": "string",
+              "description": "Filter by eligible country (ISO name)."
+            },
+            "search": {
+              "type": "string",
+              "description": "Free-text search over title and summary."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Max results (default 20)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_organizations",
+        "title": "List my organizations",
+        "description": "List organizations owned by the signed-in user on LaunchPad Africa.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_funding_matches",
+        "title": "List funding matches for an organization",
+        "description": "List AI-computed funding opportunity matches (score, reasons, gaps) for one of the signed-in user's organizations.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "organization_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The organization ID (must belong to the signed-in user)."
+            },
+            "min_score": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Only return matches at or above this score."
+            }
+          },
+          "required": [
+            "organization_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "run_funding_discovery",
+        "title": "Run AI funding discovery",
+        "description": "Trigger the AI Funding Intelligence engine to recompute funder matches for one of the user's organizations. Returns match scores, reasons, and gaps.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "organization_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The organization to score against active funding opportunities."
+            }
+          },
+          "required": [
+            "organization_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
