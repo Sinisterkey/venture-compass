@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 
-const STORAGE_KEY = "launchpad_onboarding_seen_v1";
+const STORAGE_KEY = "ngo-bridge_onboarding_seen_v1";
 
 const steps = [
   {
     icon: Rocket,
-    title: "Welcome to LaunchPad Africa",
+    title: "Welcome to NGO Bridge",
     body: "The home for Africa's next generation of student founders, investors, mentors, and ecosystem builders. Let's take a quick tour.",
   },
   {

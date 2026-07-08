@@ -11,7 +11,7 @@ function supa(ctx: ToolContext) {
 export default defineTool({
   name: "list_my_organizations",
   title: "List my organizations",
-  description: "List organizations owned by the signed-in user on LaunchPad Africa.",
+  description: "List organizations owned by the signed-in user on NGO Bridge.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {

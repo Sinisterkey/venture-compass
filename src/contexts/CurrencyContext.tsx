@@ -26,7 +26,7 @@ interface CurrencyContextValue {
 
 const CurrencyContext = createContext<CurrencyContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "launchpad.currency";
+const STORAGE_KEY = "ngo-bridge.currency";
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [code, setCode] = useState<CurrencyCode>(() => {

@@ -24,7 +24,7 @@ export function HeroSection() {
             Where African impact meets <span className="text-primary">smart funding</span>
           </h1>
           <p className="text-lg text-secondary-foreground/75 max-w-lg mb-10 leading-relaxed">
-            LaunchPad Africa uses AI to connect NGOs, community organizations, and social enterprises with the funders, donors, and grant makers most aligned with their mission.
+            NGO Bridge uses AI to connect NGOs, community organizations, and social enterprises with the funders, donors, and grant makers most aligned with their mission.
           </p>
 
           {!loading && (

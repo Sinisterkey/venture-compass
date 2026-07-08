@@ -12,7 +12,7 @@ function supa(ctx: ToolContext) {
 export default defineTool({
   name: "list_funding_opportunities",
   title: "List funding opportunities",
-  description: "List active funding opportunities on LaunchPad Africa. Optionally filter by sector, country, or search text in title/summary.",
+  description: "List active funding opportunities on NGO Bridge. Optionally filter by sector, country, or search text in title/summary.",
   inputSchema: {
     sector: z.string().optional().describe("Filter by sector (e.g. 'WASH', 'Agriculture', 'Health')."),
     country: z.string().optional().describe("Filter by eligible country (ISO name)."),

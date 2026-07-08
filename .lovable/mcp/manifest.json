@@ -11,15 +11,15 @@
   },
   "mcp": {
     "server": {
-      "name": "launchpad-africa-mcp",
+      "name": "ngo-bridge-mcp",
       "version": "0.1.0",
-      "title": "LaunchPad Africa"
+      "title": "NGO Bridge"
     },
     "tools": [
       {
         "name": "search_organizations",
         "title": "Search organizations",
-        "description": "Search public/verified organizations on LaunchPad Africa by name, sector, or country.",
+        "description": "Search public/verified organizations on NGO Bridge by name, sector, or country.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -52,7 +52,7 @@
       {
         "name": "list_funding_opportunities",
         "title": "List funding opportunities",
-        "description": "List active funding opportunities on LaunchPad Africa. Optionally filter by sector, country, or search text in title/summary.",
+        "description": "List active funding opportunities on NGO Bridge. Optionally filter by sector, country, or search text in title/summary.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -88,7 +88,7 @@
       {
         "name": "list_my_organizations",
         "title": "List my organizations",
-        "description": "List organizations owned by the signed-in user on LaunchPad Africa.",
+        "description": "List organizations owned by the signed-in user on NGO Bridge.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,

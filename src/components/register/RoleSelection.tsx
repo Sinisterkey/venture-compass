@@ -17,7 +17,7 @@ export function RoleSelection({ role, setRole, onContinue }: Props) {
   return (
     <>
       <h1 className="font-display text-2xl font-bold text-foreground mb-2">Choose your role</h1>
-      <p className="text-sm text-muted-foreground mb-6">How will you use LaunchPad Africa?</p>
+      <p className="text-sm text-muted-foreground mb-6">How will you use NGO Bridge?</p>
 
       <div className="grid grid-cols-1 gap-3 mb-6">
         {ROLES.map((r) => (

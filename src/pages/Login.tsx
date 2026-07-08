@@ -47,7 +47,7 @@ export default function Login() {
             <Rocket className="h-5 w-5" />
           </div>
           <span className="font-display text-xl font-bold">
-            Launch<span className="text-primary">Pad</span> Africa
+            NGO <span className="text-primary">Bridge</span>
           </span>
         </Link>
 
@@ -58,7 +58,7 @@ export default function Login() {
           </p>
         </div>
 
-        <p className="text-xs text-secondary-foreground/40">© {new Date().getFullYear()} LaunchPad Africa</p>
+        <p className="text-xs text-secondary-foreground/40">© {new Date().getFullYear()} NGO Bridge</p>
       </div>
 
       {/* Right panel */}
@@ -70,7 +70,7 @@ export default function Login() {
                 <Rocket className="h-5 w-5" />
               </div>
               <span className="font-display text-xl font-bold text-foreground">
-                Launch<span className="text-primary">Pad</span> Africa
+                NGO <span className="text-primary">Bridge</span>
               </span>
             </Link>
           </div>
