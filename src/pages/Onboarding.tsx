@@ -101,7 +101,7 @@ export default function Onboarding() {
       <header className="border-b border-border">
         <div className="container py-4 flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Sparkles className="h-5 w-5" /></div>
-          <span className="font-display text-xl font-bold">Launch<span className="text-primary">Pad</span> Africa</span>
+          <span className="font-display text-xl font-bold">NGO <span className="text-primary">Bridge</span></span>
         </div>
       </header>
 

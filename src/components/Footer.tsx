@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Rocket } from "lucide-react";
+import brandLogo from "@/assets/ngo-bridge-logo.png";
 
 const footerLinks = {
   Platform: [
@@ -29,11 +29,9 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Rocket className="h-5 w-5" />
-              </div>
+              <img src={brandLogo} alt="NGO Bridge logo" width={36} height={36} loading="lazy" className="h-9 w-9 bg-white rounded-md p-1" />
               <span className="font-display text-xl font-bold">
-                Launch<span className="text-primary">Pad</span> Africa
+                NGO <span className="text-primary">Bridge</span>
               </span>
             </Link>
             <p className="text-sm text-secondary-foreground/70 max-w-xs leading-relaxed">
@@ -63,7 +61,7 @@ export function Footer() {
 
         <div className="mt-12 pt-8 border-t border-secondary-foreground/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-secondary-foreground/50">
-            © {new Date().getFullYear()} LaunchPad Africa. All rights reserved.
+            © {new Date().getFullYear()} NGO Bridge. All rights reserved.
           </p>
           <p className="text-xs text-secondary-foreground/50">
             Building trusted funding partnerships across Africa 🌍

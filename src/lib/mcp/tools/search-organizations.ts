@@ -12,7 +12,7 @@ function supa(ctx: ToolContext) {
 export default defineTool({
   name: "search_organizations",
   title: "Search organizations",
-  description: "Search public/verified organizations on LaunchPad Africa by name, sector, or country.",
+  description: "Search public/verified organizations on NGO Bridge by name, sector, or country.",
   inputSchema: {
     search: z.string().optional().describe("Free-text search over name and mission."),
     sector: z.string().optional(),

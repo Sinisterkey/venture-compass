@@ -11,7 +11,7 @@ type Role = "ngo" | "investor" | "admin";
 const DEMO_ACCOUNTS: Array<{ email: string; password: string; full_name: string; role: Role; bio: string; country: string; city: string }> = [
   { email: "ngo@demo.com", password: "demo1234", full_name: "Chanda Banda (NGO Demo)", role: "ngo", bio: "Director of a youth empowerment NGO in Copperbelt.", country: "Zambia", city: "Kitwe" },
   { email: "investor@demo.com", password: "demo1234", full_name: "Aisha Chitundu (Funder Demo)", role: "investor", bio: "Program officer at an East African impact foundation. ZMW 100k-500k grants.", country: "Kenya", city: "Nairobi" },
-  { email: "admin@launchpad.com", password: "admin1234", full_name: "Platform Admin", role: "admin", bio: "LaunchPad Africa platform administrator.", country: "Zambia", city: "Lusaka" },
+  { email: "admin@ngo-bridge.com", password: "admin1234", full_name: "Platform Admin", role: "admin", bio: "NGO Bridge platform administrator.", country: "Zambia", city: "Lusaka" },
 ];
 
 const DEMO_ORGS = [

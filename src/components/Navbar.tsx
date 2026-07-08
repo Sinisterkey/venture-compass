@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Sparkles, LogOut, Settings, Shield, LayoutDashboard } from "lucide-react";
+import { Menu, X, LogOut, Settings, Shield, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationsBell } from "@/components/NotificationsBell";
+import brandLogo from "@/assets/ngo-bridge-logo.png";
 
 const baseLinks = [
   { label: "Home", path: "/" },
@@ -32,11 +33,9 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform group-hover:scale-105">
-            <Sparkles className="h-5 w-5" />
-          </div>
+          <img src={brandLogo} alt="NGO Bridge logo" width={36} height={36} className="h-9 w-9 transition-transform group-hover:scale-105" />
           <span className="font-display text-xl font-bold text-foreground">
-            Launch<span className="text-primary">Pad</span> Africa
+            NGO <span className="text-primary">Bridge</span>
           </span>
         </Link>
 

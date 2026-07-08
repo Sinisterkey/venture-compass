@@ -98,12 +98,12 @@ export default function OAuthConsent() {
             <Rocket className="h-5 w-5" />
           </div>
           <span className="font-display text-lg font-bold">
-            Launch<span className="text-primary">Pad</span> Africa
+            NGO <span className="text-primary">Bridge</span>
           </span>
         </div>
         <h1 className="font-display text-2xl font-bold mb-2">Connect {clientName}?</h1>
         <p className="text-muted-foreground mb-6">
-          {clientName} is requesting access to use LaunchPad Africa on your behalf. It will be able to read
+          {clientName} is requesting access to use NGO Bridge on your behalf. It will be able to read
           your organizations, funding matches, and public funding opportunities, and trigger AI funder
           discovery for your organizations.
         </p>

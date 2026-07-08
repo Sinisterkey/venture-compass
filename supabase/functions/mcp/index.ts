@@ -18,7 +18,7 @@ function supa(ctx) {
 var list_funding_opportunities_default = defineTool({
   name: "list_funding_opportunities",
   title: "List funding opportunities",
-  description: "List active funding opportunities on LaunchPad Africa. Optionally filter by sector, country, or search text in title/summary.",
+  description: "List active funding opportunities on NGO Bridge. Optionally filter by sector, country, or search text in title/summary.",
   inputSchema: {
     sector: z.string().optional().describe("Filter by sector (e.g. 'WASH', 'Agriculture', 'Health')."),
     country: z.string().optional().describe("Filter by eligible country (ISO name)."),
@@ -50,7 +50,7 @@ function supa2(ctx) {
 var list_my_organizations_default = defineTool2({
   name: "list_my_organizations",
   title: "List my organizations",
-  description: "List organizations owned by the signed-in user on LaunchPad Africa.",
+  description: "List organizations owned by the signed-in user on NGO Bridge.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {
@@ -134,7 +134,7 @@ function supa5(ctx) {
 var search_organizations_default = defineTool5({
   name: "search_organizations",
   title: "Search organizations",
-  description: "Search public/verified organizations on LaunchPad Africa by name, sector, or country.",
+  description: "Search public/verified organizations on NGO Bridge by name, sector, or country.",
   inputSchema: {
     search: z4.string().optional().describe("Free-text search over name and mission."),
     sector: z4.string().optional(),
@@ -157,10 +157,10 @@ var search_organizations_default = defineTool5({
 // src/lib/mcp/index.ts
 var projectRef = "iaugaafivggkadlojoqu";
 var mcp_default = defineMcp({
-  name: "launchpad-africa-mcp",
-  title: "LaunchPad Africa",
+  name: "ngo-bridge-mcp",
+  title: "NGO Bridge",
   version: "0.1.0",
-  instructions: "Tools for LaunchPad Africa \u2014 a platform connecting African NGOs and startups with investors and funding opportunities. Use `search_organizations` and `list_funding_opportunities` to explore the public catalog, `list_my_organizations` to see the signed-in user's organizations, `list_funding_matches` to view AI-scored funder matches for one of their organizations, and `run_funding_discovery` to recompute matches.",
+  instructions: "Tools for NGO Bridge \u2014 a platform connecting African NGOs and startups with investors and funding opportunities. Use `search_organizations` and `list_funding_opportunities` to explore the public catalog, `list_my_organizations` to see the signed-in user's organizations, `list_funding_matches` to view AI-scored funder matches for one of their organizations, and `run_funding_discovery` to recompute matches.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"

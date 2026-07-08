@@ -10,7 +10,7 @@ const RW_URL = "https://api.reliefweb.int/v1/reports";
 
 async function fetchReliefWeb(): Promise<any[]> {
   const body = {
-    appname: "launchpad-africa",
+    appname: "ngo-bridge",
     limit: 30,
     profile: "list",
     preset: "latest",
@@ -22,7 +22,7 @@ async function fetchReliefWeb(): Promise<any[]> {
         { field: "primary_country.iso3", value: ["ZMB","KEN","NGA","UGA","GHA","RWA","MWI","TZA","ETH","SEN","ZWE","COD"], operator: "OR" },
       ],
     },
-    fields: { include: ["title", "body", "source", "url", "primary_country", "theme", "date"] },
+    fields: { include: ["title", "body", "source", "url", "url_alias", "primary_country", "theme", "date"] },
   };
   const r = await fetch(RW_URL, {
     method: "POST",
@@ -65,7 +65,9 @@ Deno.serve(async (req) => {
       if (!/grant|funding|call for proposals?|appeal|award|financing/i.test(bodyText + " " + title)) continue;
 
       const summary = bodyText.slice(0, 500);
-      const url = f.url ?? item.href ?? null;
+      // Prefer the direct public report page URL; ReliefWeb exposes it as `url_alias`.
+      // `f.url` sometimes points to an external attachment/PDF, and `item.href` is the API URL — avoid both as fallbacks.
+      const url = f.url_alias ?? f.url ?? null;
       const countries = (f.primary_country ?? []).map((c: any) => c.name).filter(Boolean);
       const themes = (f.theme ?? []).map((t: any) => t.name);
       const sectors = Array.from(new Set(themes.map((t: string) => THEME_TO_SECTOR[t]).filter(Boolean)));

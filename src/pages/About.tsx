@@ -12,12 +12,12 @@ export default function About() {
         <section className="border-b border-border bg-gradient-to-br from-primary/5 via-background to-background">
           <div className="container py-16 md:py-24">
             <div className="max-w-3xl">
-              <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">About LaunchPad Africa</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">About NGO Bridge</p>
               <h1 className="font-display text-3xl md:text-5xl font-bold mb-5 leading-tight">
                 AI-powered funding access for African impact organizations
               </h1>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                LaunchPad Africa is an intelligent matching platform that connects NGOs, community organizations, social enterprises, and university-led initiatives with donors, foundations, grant makers, and impact investors. We use AI to surface aligned funding opportunities, score organizational readiness, and help impact-driven teams attract the right partners.
+                NGO Bridge is an intelligent matching platform that connects NGOs, community organizations, social enterprises, and university-led initiatives with donors, foundations, grant makers, and impact investors. We use AI to surface aligned funding opportunities, score organizational readiness, and help impact-driven teams attract the right partners.
               </p>
               <div className="flex flex-wrap gap-3 mt-7">
                 <Button asChild><Link to="/register">Join the platform</Link></Button>

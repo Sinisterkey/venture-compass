@@ -49,7 +49,7 @@ export default function Register() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Sparkles className="h-5 w-5" />
           </div>
-          <span className="font-display text-xl font-bold">Launch<span className="text-primary">Pad</span> Africa</span>
+          <span className="font-display text-xl font-bold">NGO <span className="text-primary">Bridge</span></span>
         </Link>
         <div>
           <h2 className="font-display text-3xl font-bold mb-4">AI-powered NGO ↔ Funder matching</h2>
@@ -57,7 +57,7 @@ export default function Register() {
             Connect impact-driven organizations with donors, foundations, and grant makers who care about Africa.
           </p>
         </div>
-        <p className="text-xs text-secondary-foreground/40">© {new Date().getFullYear()} LaunchPad Africa</p>
+        <p className="text-xs text-secondary-foreground/40">© {new Date().getFullYear()} NGO Bridge</p>
       </div>
 
       <div className="flex-1 flex items-center justify-center p-8">
