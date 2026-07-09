@@ -1,106 +1,131 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/ai.ts";
 
-// Ingest live funding opportunities from free public sources:
-//  - ReliefWeb (UN OCHA) reports tagged as appeals / funding / grants
-// EU F&T portal and Gates Grand Challenges are HTML-only for open lists — those
-// remain in the curated seed until a Firecrawl connector is added.
+// Live funding-opportunity ingester.
+//
+// Source: IFRC GO public API (goadmin.ifrc.org). This endpoint is fully open,
+// reachable from Deno Deploy egress, and every appeal returns a deep link to
+// its dedicated page on go.ifrc.org, so "Open funding call" always lands on
+// the exact appeal — never a funder homepage.
 
-const RW_URL = "https://api.reliefweb.int/v1/reports";
+const IFRC_URL =
+  "https://goadmin.ifrc.org/api/v2/appeal/" +
+  "?region=0" +           // 0 = Africa
+  "&limit=40" +
+  "&ordering=-start_date";
 
-async function fetchReliefWeb(): Promise<any[]> {
-  const body = {
-    appname: "ngo-bridge",
-    limit: 30,
-    profile: "list",
-    preset: "latest",
-    query: { value: "grant OR funding OR call for proposals OR appeal", operator: "OR", fields: ["title", "body"] },
-    filter: {
-      operator: "AND",
-      conditions: [
-        { field: "format.name", value: ["Appeal", "News and Press Release"], operator: "OR" },
-        { field: "primary_country.iso3", value: ["ZMB","KEN","NGA","UGA","GHA","RWA","MWI","TZA","ETH","SEN","ZWE","COD"], operator: "OR" },
-      ],
-    },
-    fields: { include: ["title", "body", "source", "url", "url_alias", "primary_country", "theme", "date"] },
-  };
-  const r = await fetch(RW_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error(`ReliefWeb ${r.status}`);
-  const j = await r.json();
-  return j?.data ?? [];
-}
-
-const THEME_TO_SECTOR: Record<string, string> = {
-  "Agriculture": "Agriculture",
-  "Education": "Education",
-  "Food and Nutrition": "Agriculture",
-  "Gender": "Gender",
-  "Health": "Health",
-  "Water Sanitation Hygiene": "WASH",
-  "Climate Change and Environment": "Climate",
-  "Protection and Human Rights": "Human Rights",
-  "Shelter and Non-Food Items": "Social Services",
+const DTYPE_TO_SECTOR: Record<string, string> = {
+  "Epidemic": "Health",
+  "Complex Emergency": "Human Rights",
+  "Population Movement": "Refugees & Migration",
+  "Food Insecurity": "Agriculture",
+  "Drought": "Climate",
+  "Flood": "WASH",
+  "Cyclone": "Climate",
+  "Earthquake": "Social Services",
+  "Fire": "Social Services",
+  "Civil Unrest": "Human Rights",
+  "Storm Surge": "Climate",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const supa = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-    const items = await fetchReliefWeb();
-    let inserted = 0, updated = 0;
+    const r = await fetch(IFRC_URL, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; NGOBridgeBot/1.0)",
+        "Accept": "application/json",
+      },
+    });
+    if (!r.ok) throw new Error(`IFRC GO ${r.status}`);
+    const payload = await r.json();
+    const results: any[] = payload?.results ?? [];
+    console.log("ifrc results:", results.length);
 
-    for (const item of items) {
-      const f = item.fields ?? {};
-      const funder = f.source?.[0]?.name ?? "ReliefWeb";
-      const title = (f.title ?? "").slice(0, 300);
-      if (!title) continue;
+    let inserted = 0, updated = 0, skipped = 0;
 
-      const bodyText = (f.body ?? "").replace(/\s+/g, " ").trim();
-      // Only keep items that actually mention funding-like keywords in the body
-      if (!/grant|funding|call for proposals?|appeal|award|financing/i.test(bodyText + " " + title)) continue;
+    for (const a of results) {
+      const id = a?.id;
+      const name = String(a?.name ?? "").trim().slice(0, 300);
+      const country = a?.country?.name ?? null;
+      const dtype = a?.dtype?.name ?? null;
+      const atype = a?.atype_display ?? null;
+      const status = a?.status_display ?? null;
+      const amount = Number(a?.amount_requested) || null;
+      const funded = Number(a?.amount_funded) || null;
+      const start = a?.start_date ?? null;
+      const end = a?.end_date ?? null;
+      const code = a?.code ?? null;
 
-      const summary = bodyText.slice(0, 500);
-      // Prefer the direct public report page URL; ReliefWeb exposes it as `url_alias`.
-      // `f.url` sometimes points to an external attachment/PDF, and `item.href` is the API URL — avoid both as fallbacks.
-      const url = f.url_alias ?? f.url ?? null;
-      const countries = (f.primary_country ?? []).map((c: any) => c.name).filter(Boolean);
-      const themes = (f.theme ?? []).map((t: any) => t.name);
-      const sectors = Array.from(new Set(themes.map((t: string) => THEME_TO_SECTOR[t]).filter(Boolean)));
+      if (!id || !name || !country) { skipped++; continue; }
+      // Only surface active or recent appeals — closed ones aren't actionable.
+      if (status && !/active|launched|open|pledged/i.test(status)) { skipped++; continue; }
 
-      // Dedupe by url when present, else by funder+title
-      const existingQ = supa.from("funding_opportunities").select("id");
-      const { data: existing } = url
-        ? await existingQ.eq("url", url).maybeSingle()
-        : await existingQ.eq("funder", funder).eq("title", title).maybeSingle();
+      const url = `https://go.ifrc.org/appeals/${id}`;
+      const funder = "IFRC (International Federation of Red Cross)";
+      const sectorGuess = dtype && DTYPE_TO_SECTOR[dtype] ? [DTYPE_TO_SECTOR[dtype]] : [];
 
-      const row = {
+      const summaryBits = [
+        `${atype ?? "Appeal"} appeal in ${country}`,
+        dtype ? `Focus: ${dtype}` : null,
+        amount ? `Requested CHF ${amount.toLocaleString()}` : null,
+        funded ? `Funded CHF ${funded.toLocaleString()}` : null,
+        start ? `Started ${new Date(start).toLocaleDateString()}` : null,
+        code ? `Reference ${code}` : null,
+      ].filter(Boolean);
+      const summary = summaryBits.join(" · ").slice(0, 500);
+
+      const row: Record<string, unknown> = {
         funder,
-        title,
+        title: name,
         summary,
         url,
-        sectors,
-        countries,
-        source: "reliefweb.int",
+        sectors: sectorGuess,
+        countries: [country],
+        source: "go.ifrc.org",
         is_verified: true,
         is_active: true,
+        min_amount: amount,
+        max_amount: amount,
+        currency: amount ? "CHF" : null,
+        deadline: end,
       };
 
+      const { data: existing } = await supa
+        .from("funding_opportunities")
+        .select("id")
+        .eq("url", url)
+        .maybeSingle();
+
       if (existing?.id) {
-        await supa.from("funding_opportunities").update(row).eq("id", existing.id);
-        updated++;
+        const { error } = await supa.from("funding_opportunities").update(row).eq("id", existing.id);
+        if (error) { console.error("update error:", error.message); skipped++; }
+        else updated++;
       } else {
-        await supa.from("funding_opportunities").insert(row);
-        inserted++;
+        const { error } = await supa.from("funding_opportunities").insert(row);
+        if (error) { console.error("insert error:", error.message); skipped++; }
+        else inserted++;
       }
     }
 
-    return Response.json({ ok: true, source: "reliefweb", inserted, updated, scanned: items.length }, { headers: corsHeaders });
+    return Response.json(
+      {
+        ok: true,
+        source: "ifrc-go",
+        scanned: results.length,
+        inserted,
+        updated,
+        skipped,
+      },
+      { headers: corsHeaders },
+    );
   } catch (e) {
+    console.error("ingest error:", (e as Error).message);
     return Response.json({ error: (e as Error).message }, { status: 500, headers: corsHeaders });
   }
 });

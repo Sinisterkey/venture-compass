@@ -189,13 +189,21 @@ export default function FundingIntelligence() {
                       </ul>
                     </div>
                   )}
-                  {m.opportunity.url && (
-                    <div className="pt-2">
-                      <Button variant="outline" size="sm" asChild className="gap-2">
-                        <a href={m.opportunity.url} target="_blank" rel="noreferrer">Visit funder site <ExternalLink className="h-3.5 w-3.5" /></a>
-                      </Button>
-                    </div>
-                  )}
+                  {(() => {
+                    const raw = m.opportunity.url;
+                    if (!raw) return null;
+                    try {
+                      const u = new URL(raw);
+                      if (!u.pathname || u.pathname === "/") return null;
+                      return (
+                        <div className="pt-2">
+                          <Button variant="outline" size="sm" asChild className="gap-2">
+                            <a href={u.toString()} target="_blank" rel="noreferrer">Open funding call <ExternalLink className="h-3.5 w-3.5" /></a>
+                          </Button>
+                        </div>
+                      );
+                    } catch { return null; }
+                  })()}
                 </div>
               </div>
             </Card>
