@@ -50,14 +50,21 @@ Deno.serve(async (req) => {
   try {
     const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const r = await fetch(RSS_URL, { headers: { "User-Agent": "ngo-bridge/1.0" } });
+    const r = await fetch(RSS_URL, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; NGOBridgeBot/1.0; +https://ngo-bridge.lovable.app)",
+        "Accept": "application/rss+xml, application/xml, text/xml, */*",
+      },
+    });
     if (!r.ok) throw new Error(`ReliefWeb RSS ${r.status}`);
     const xml = await r.text();
+    console.log("rss bytes:", xml.length);
 
     const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
     const doc = parser.parse(xml);
     const raw = doc?.rss?.channel?.item ?? [];
     const items: any[] = Array.isArray(raw) ? raw : [raw];
+    console.log("rss items parsed:", items.length);
 
     let inserted = 0, updated = 0, skipped = 0;
 
