@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     });
     if (!r.ok) throw new Error(`ReliefWeb RSS ${r.status}`);
     const xml = await r.text();
-    console.log("rss bytes:", xml.length);
+    console.log("rss status:", r.status, "bytes:", xml.length, "ct:", r.headers.get("content-type"), "preview:", xml.slice(0, 300));
 
     const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
     const doc = parser.parse(xml);
