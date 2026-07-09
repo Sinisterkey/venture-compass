@@ -50,15 +50,25 @@ Deno.serve(async (req) => {
   try {
     const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const r = await fetch(RSS_URL, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; NGOBridgeBot/1.0; +https://ngo-bridge.lovable.app)",
-        "Accept": "application/rss+xml, application/xml, text/xml, */*",
-      },
-    });
-    if (!r.ok) throw new Error(`ReliefWeb RSS ${r.status}`);
-    const xml = await r.text();
-    console.log("rss status:", r.status, "bytes:", xml.length, "ct:", r.headers.get("content-type"), "preview:", xml.slice(0, 300));
+    // ReliefWeb's Cloudflare edge sometimes replies to Supabase egress with a 202
+    // empty body until the request is retried. Try a couple of times before giving up.
+    let xml = "";
+    let lastStatus = 0;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const r = await fetch(RSS_URL, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+          "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      });
+      lastStatus = r.status;
+      const body = await r.text();
+      console.log("rss attempt", attempt, "status:", r.status, "bytes:", body.length);
+      if (r.status === 200 && body.includes("<item")) { xml = body; break; }
+      await new Promise((res) => setTimeout(res, 800 * (attempt + 1)));
+    }
+    if (!xml) throw new Error(`ReliefWeb RSS unavailable (last status ${lastStatus})`);
 
     const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
     const doc = parser.parse(xml);
