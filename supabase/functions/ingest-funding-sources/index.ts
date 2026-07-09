@@ -1,37 +1,23 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { XMLParser } from "npm:fast-xml-parser@4";
 import { corsHeaders } from "../_shared/ai.ts";
 
-// Ingest live funding opportunities from free public sources:
-//  - ReliefWeb (UN OCHA) reports tagged as appeals / funding / grants
-// Only rows with a real deep link to the specific report are kept — no funder homepages.
+// Ingest live funding opportunities from ReliefWeb's public RSS feed.
+// The v2 JSON API now requires an approved `appname`; the RSS feed remains
+// public and every item contains a direct deep link to the specific report.
 
-const RW_URL = "https://api.reliefweb.int/v1/reports";
+const RSS_URL =
+  "https://reliefweb.int/updates/rss.xml?search=" +
+  encodeURIComponent('grant OR funding OR "call for proposals" OR appeal');
 
-async function fetchReliefWeb(): Promise<any[]> {
-  const body = {
-    appname: "ngo-bridge",
-    limit: 40,
-    profile: "list",
-    preset: "latest",
-    query: { value: "grant OR funding OR \"call for proposals\" OR appeal", operator: "OR", fields: ["title", "body"] },
-    filter: {
-      operator: "AND",
-      conditions: [
-        { field: "format.name", value: ["Appeal", "News and Press Release"], operator: "OR" },
-        { field: "primary_country.iso3", value: ["ZMB","KEN","NGA","UGA","GHA","RWA","MWI","TZA","ETH","SEN","ZWE","COD"], operator: "OR" },
-      ],
-    },
-    fields: { include: ["title", "body", "source", "url", "url_alias", "primary_country", "theme", "date"] },
-  };
-  const r = await fetch(RW_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error(`ReliefWeb ${r.status}`);
-  const j = await r.json();
-  return j?.data ?? [];
-}
+const AFRICA_COUNTRIES = new Set([
+  "Zambia","Kenya","Nigeria","Uganda","Ghana","Rwanda","Malawi","Tanzania, United Republic of",
+  "Ethiopia","Senegal","Zimbabwe","Democratic Republic of the Congo","South Africa","Mozambique",
+  "Sudan","South Sudan","Somalia","Cameroon","Burkina Faso","Mali","Niger","Chad","Sierra Leone",
+  "Liberia","Madagascar","Angola","Botswana","Namibia","Lesotho","Eswatini","Burundi",
+  "Central African Republic","Republic of the Congo","Côte d'Ivoire","Togo","Benin","Guinea",
+  "Guinea-Bissau","The Gambia","Mauritania","Djibouti","Eritrea","Comoros","Cabo Verde",
+]);
 
 const THEME_TO_SECTOR: Record<string, string> = {
   "Agriculture": "Agriculture",
@@ -44,21 +30,19 @@ const THEME_TO_SECTOR: Record<string, string> = {
   "Protection and Human Rights": "Human Rights",
   "Shelter and Non-Food Items": "Social Services",
 };
+const THEME_KEYS = new Set(Object.keys(THEME_TO_SECTOR));
+const FORMAT_TAGS = new Set(["Appeal","News and Press Release","Analysis","Situation Report","Assessment"]);
 
-// Only accept ReliefWeb deep report links, never the root domain or an attachment.
-function pickReportUrl(f: any, id: string | number | undefined): string | null {
-  const candidates: string[] = [f?.url_alias, f?.url].filter(Boolean);
-  for (const c of candidates) {
-    try {
-      const u = new URL(c);
-      if (u.hostname.endsWith("reliefweb.int") && /^\/(report|node)\/[^/]+/.test(u.pathname)) {
-        return u.toString();
-      }
-    } catch { /* skip */ }
-  }
-  // Fallback: build canonical report URL from the numeric id if available.
-  if (id != null) return `https://reliefweb.int/node/${id}`;
-  return null;
+function stripHtml(s: string): string {
+  return s.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
+    .replace(/&#039;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
+}
+
+function isReliefWebReportUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.hostname.endsWith("reliefweb.int") && /^\/(report|node)\/[^/]+/.test(u.pathname);
+  } catch { return false; }
 }
 
 Deno.serve(async (req) => {
@@ -66,40 +50,47 @@ Deno.serve(async (req) => {
   try {
     const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const items = await fetchReliefWeb();
+    const r = await fetch(RSS_URL, { headers: { "User-Agent": "ngo-bridge/1.0" } });
+    if (!r.ok) throw new Error(`ReliefWeb RSS ${r.status}`);
+    const xml = await r.text();
+
+    const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
+    const doc = parser.parse(xml);
+    const raw = doc?.rss?.channel?.item ?? [];
+    const items: any[] = Array.isArray(raw) ? raw : [raw];
+
     let inserted = 0, updated = 0, skipped = 0;
 
-    for (const item of items) {
-      const f = item.fields ?? {};
-      const funder = (f.source?.[0]?.name ?? "ReliefWeb").slice(0, 200);
-      const title = (f.title ?? "").slice(0, 300);
-      if (!title) { skipped++; continue; }
+    for (const it of items) {
+      const title = String(it?.title ?? "").slice(0, 300).trim();
+      const link = String(it?.link ?? "").trim();
+      if (!title || !isReliefWebReportUrl(link)) { skipped++; continue; }
 
-      const bodyText = (f.body ?? "").replace(/\s+/g, " ").trim();
-      if (!/grant|funding|call for proposals?|appeal|award|financing/i.test(bodyText + " " + title)) {
-        skipped++; continue;
-      }
+      const cats: string[] = ([] as any[]).concat(it?.category ?? []).map((c) => String(c).trim()).filter(Boolean);
+      // Must be an actual funding-related format tag OR title contains funding wording
+      const hasFundingFormat = cats.some((c) => FORMAT_TAGS.has(c));
+      const titleMentionsFunding = /grant|funding|call for proposals?|appeal|award|financing/i.test(title);
+      if (!hasFundingFormat && !titleMentionsFunding) { skipped++; continue; }
 
-      const url = pickReportUrl(f, item.id);
-      if (!url) { skipped++; continue; }
+      const countries = cats.filter((c) => AFRICA_COUNTRIES.has(c));
+      if (countries.length === 0) { skipped++; continue; }
 
-      const summary = bodyText.slice(0, 500);
-      const countries = (f.primary_country ?? []).map((c: any) => c.name).filter(Boolean);
-      const themes = (f.theme ?? []).map((t: any) => t.name);
-      const sectors = Array.from(new Set(themes.map((t: string) => THEME_TO_SECTOR[t]).filter(Boolean)));
+      const themes = cats.filter((c) => THEME_KEYS.has(c));
+      const sectors = Array.from(new Set(themes.map((t) => THEME_TO_SECTOR[t])));
+      const summary = stripHtml(String(it?.description ?? "")).slice(0, 500);
+      const funder = String(it?.author ?? it?.source ?? "ReliefWeb").slice(0, 200);
 
-      // Dedupe by url
       const { data: existing } = await supa
         .from("funding_opportunities")
         .select("id")
-        .eq("url", url)
+        .eq("url", link)
         .maybeSingle();
 
       const row = {
         funder,
         title,
-        summary,
-        url,
+        summary: summary || null,
+        url: link,
         sectors,
         countries,
         source: "reliefweb.int",
@@ -117,7 +108,7 @@ Deno.serve(async (req) => {
     }
 
     return Response.json(
-      { ok: true, source: "reliefweb", inserted, updated, skipped, scanned: items.length },
+      { ok: true, source: "reliefweb-rss", inserted, updated, skipped, scanned: items.length },
       { headers: corsHeaders },
     );
   } catch (e) {
