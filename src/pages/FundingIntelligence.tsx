@@ -190,19 +190,36 @@ export default function FundingIntelligence() {
                     </div>
                   )}
                   {(() => {
+                    const normalizeUrl = (raw: string | null | undefined) => {
+                      if (!raw) return null;
+                      const s = String(raw).trim();
+                      if (!s) return null;
+                      // If someone stored a URL without scheme (e.g. "www.example.com"), add https://
+                      if (/^www\./i.test(s)) return `https://${s}`;
+                      if (!/^https?:\/\//i.test(s)) return `https://${s}`;
+                      return s;
+                    };
+
                     const raw = m.opportunity.url;
-                    if (!raw) return null;
+                    const normalized = normalizeUrl(raw);
+                    if (!normalized) return null;
+
                     try {
-                      const u = new URL(raw);
-                      if (!u.pathname || u.pathname === "/") return null;
+                      const u = new URL(normalized);
+                      // Be permissive: some sources may use / as a redirect landing page.
+                      if (!u.hostname) return null;
                       return (
                         <div className="pt-2">
                           <Button variant="outline" size="sm" asChild className="gap-2">
-                            <a href={u.toString()} target="_blank" rel="noreferrer">Open funding call <ExternalLink className="h-3.5 w-3.5" /></a>
+                            <a href={u.toString()} target="_blank" rel="noreferrer">
+                              Open funding call <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
                           </Button>
                         </div>
                       );
-                    } catch { return null; }
+                    } catch {
+                      return null;
+                    }
                   })()}
                 </div>
               </div>
