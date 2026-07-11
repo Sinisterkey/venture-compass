@@ -1,16 +1,28 @@
-# TODO — Enforce one NGO organization per user (remove duplicate org creation)
+# TODO — Funding discovery improvements (multi-source)
 
-## Plan (high level)
-1. Add frontend guard to block creating a second organization for an NGO user.
-2. Update dashboard/quick links to stop routing to `/create-organization` when an org already exists.
-3. Update demo seeding to create only one organization for the NGO demo user.
-4. (Optional) Add DB uniqueness constraint on `organizations.owner_id`.
-5. Sanity-check compilation (TypeScript) and run tests/lint.
+## Discovery + ingestion (Phase 1)
+- [ ] Read current edge-function behavior (already analyzed):
+  - [ ] `supabase/functions/ingest-funding-sources/index.ts` (currently IFRC-only)
+  - [ ] `supabase/functions/ai-discover-funders/index.ts` (rule prefilter + AI refine)
+- [ ] Implement multi-source ingestion framework inside `ingest-funding-sources`.
+- [ ] Add **ReliefWeb** provider first.
+  - [ ] Fetch candidate listing via ReliefWeb search/RSS.
+  - [ ] Extract deep links to the posting detail pages.
+  - [ ] Normalize into `public.funding_opportunities` schema.
+  - [ ] Upsert/dedupe safely without breaking IFRC ingestion.
+- [ ] Add additional providers (sequence):
+  - [ ] SAM.gov
+  - [ ] Grants.gov
+  - [ ] EU Funding & Tenders
 
-## Progress
-- [x] Step 1: Update `src/pages/CreateOrganization.tsx`
-- [x] Step 2: Update `src/pages/Dashboard.tsx`
-- [x] Step 3: Update `supabase/functions/seed-demo-accounts/index.ts`
-- [ ] Step 4 (optional): DB constraint
-- [ ] Step 5: Build/lint/test
+## Matching quality (Phase 2)
+- [ ] Improve dedupe/versioning beyond url-only once multiple sources are added.
+- [ ] Improve AI scoring prompt to penalize missing/low-confidence fields.
+
+## Validation (Phase 3)
+- [ ] Verify end-to-end:
+  - [ ] `Refresh live sources` inserts opportunities
+  - [ ] `Run AI Scan` produces `funding_matches`
+  - [ ] “Open funding call” links go to the deep posting URL
+- [ ] Add basic logging/metrics per provider: scanned/inserted/updated/skipped.
 

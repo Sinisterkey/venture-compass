@@ -30,72 +30,16 @@ const DTYPE_TO_SECTOR: Record<string, string> = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Keep IFRC working. Add other providers one-by-one.
+  // Any provider failure must not prevent others from ingesting.
   try {
     const supa = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const r = await fetch(IFRC_URL, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; NGOBridgeBot/1.0)",
-        "Accept": "application/json",
-      },
-    });
-    if (!r.ok) throw new Error(`IFRC GO ${r.status}`);
-    const payload = await r.json();
-    const results: any[] = payload?.results ?? [];
-    console.log("ifrc results:", results.length);
-
-    let inserted = 0, updated = 0, skipped = 0;
-
-    for (const a of results) {
-      const id = a?.id;
-      const name = String(a?.name ?? "").trim().slice(0, 300);
-      const country = a?.country?.name ?? null;
-      const dtype = a?.dtype?.name ?? null;
-      const atype = a?.atype_display ?? null;
-      const status = a?.status_display ?? null;
-      const amount = Number(a?.amount_requested) || null;
-      const funded = Number(a?.amount_funded) || null;
-      const start = a?.start_date ?? null;
-      const end = a?.end_date ?? null;
-      const code = a?.code ?? null;
-
-      if (!id || !name || !country) { skipped++; continue; }
-      // Only surface active or recent appeals — closed ones aren't actionable.
-      if (status && !/active|launched|open|pledged/i.test(status)) { skipped++; continue; }
-
-      const url = `https://go.ifrc.org/appeals/${id}`;
-      const funder = "IFRC (International Federation of Red Cross)";
-      const sectorGuess = dtype && DTYPE_TO_SECTOR[dtype] ? [DTYPE_TO_SECTOR[dtype]] : [];
-
-      const summaryBits = [
-        `${atype ?? "Appeal"} appeal in ${country}`,
-        dtype ? `Focus: ${dtype}` : null,
-        amount ? `Requested CHF ${amount.toLocaleString()}` : null,
-        funded ? `Funded CHF ${funded.toLocaleString()}` : null,
-        start ? `Started ${new Date(start).toLocaleDateString()}` : null,
-        code ? `Reference ${code}` : null,
-      ].filter(Boolean);
-      const summary = summaryBits.join(" · ").slice(0, 500);
-
-      const row: Record<string, unknown> = {
-        funder,
-        title: name,
-        summary,
-        url,
-        sectors: sectorGuess,
-        countries: [country],
-        source: "go.ifrc.org",
-        is_verified: true,
-        is_active: true,
-        min_amount: amount,
-        max_amount: amount,
-        currency: amount ? "CHF" : null,
-        deadline: end,
-      };
-
+    const upsertByUrl = async (url: string, row: Record<string, unknown>) => {
       const { data: existing } = await supa
         .from("funding_opportunities")
         .select("id")
@@ -104,26 +48,205 @@ Deno.serve(async (req) => {
 
       if (existing?.id) {
         const { error } = await supa.from("funding_opportunities").update(row).eq("id", existing.id);
-        if (error) { console.error("update error:", error.message); skipped++; }
-        else updated++;
-      } else {
-        const { error } = await supa.from("funding_opportunities").insert(row);
-        if (error) { console.error("insert error:", error.message); skipped++; }
-        else inserted++;
+        if (error) throw error;
+        return { action: "updated" as const, id: existing.id };
       }
-    }
 
-    return Response.json(
-      {
-        ok: true,
+      const { error } = await supa.from("funding_opportunities").insert(row);
+      if (error) throw error;
+      return { action: "inserted" as const };
+    };
+
+    let totals = {
+      ok: true,
+      providers: [] as Array<{
+        source: string;
+        scanned: number;
+        inserted: number;
+        updated: number;
+        skipped: number;
+        error?: string;
+      }>,
+    };
+
+    // Provider 1: IFRC GO
+    {
+      let inserted = 0;
+      let updated = 0;
+      let skipped = 0;
+      let scanned = 0;
+
+      try {
+        const r = await fetch(IFRC_URL, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; NGOBridgeBot/1.0)",
+            "Accept": "application/json",
+          },
+        });
+        if (!r.ok) throw new Error(`IFRC GO ${r.status}`);
+        const payload = await r.json();
+        const results: any[] = payload?.results ?? [];
+        scanned = results.length;
+        console.log("ifrc results:", results.length);
+
+        for (const a of results) {
+          const id = a?.id;
+          const name = String(a?.name ?? "").trim().slice(0, 300);
+          const country = a?.country?.name ?? null;
+          const dtype = a?.dtype?.name ?? null;
+          const atype = a?.atype_display ?? null;
+          const status = a?.status_display ?? null;
+          const amount = Number(a?.amount_requested) || null;
+          const funded = Number(a?.amount_funded) || null;
+          const start = a?.start_date ?? null;
+          const end = a?.end_date ?? null;
+          const code = a?.code ?? null;
+
+          if (!id || !name || !country) { skipped++; continue; }
+          // Only surface active or recent appeals — closed ones aren't actionable.
+          if (status && !/active|launched|open|pledged/i.test(status)) { skipped++; continue; }
+
+          const url = `https://go.ifrc.org/appeals/${id}`;
+          const funder = "IFRC (International Federation of Red Cross)";
+          const sectorGuess = dtype && DTYPE_TO_SECTOR[dtype] ? [DTYPE_TO_SECTOR[dtype]] : [];
+
+          const summaryBits = [
+            `${atype ?? "Appeal"} appeal in ${country}`,
+            dtype ? `Focus: ${dtype}` : null,
+            amount ? `Requested CHF ${amount.toLocaleString()}` : null,
+            funded ? `Funded CHF ${funded.toLocaleString()}` : null,
+            start ? `Started ${new Date(start).toLocaleDateString()}` : null,
+            code ? `Reference ${code}` : null,
+          ].filter(Boolean);
+          const summary = summaryBits.join(" · ").slice(0, 500);
+
+          const row: Record<string, unknown> = {
+            funder,
+            title: name,
+            summary,
+            url,
+            sectors: sectorGuess,
+            countries: [country],
+            source: "go.ifrc.org",
+            is_verified: true,
+            is_active: true,
+            min_amount: amount,
+            max_amount: amount,
+            currency: amount ? "CHF" : null,
+            deadline: end,
+          };
+
+          try {
+            const res = await upsertByUrl(url, row);
+            if (res.action === "inserted") inserted++; else updated++;
+          } catch (err) {
+            console.error("ifrc upsert error:", (err as Error).message);
+            skipped++;
+          }
+        }
+      } catch (err) {
+        totals.providers.push({
+          source: "ifrc-go",
+          scanned,
+          inserted,
+          updated,
+          skipped,
+          error: (err as Error).message,
+        });
+      }
+
+      totals.providers.push({
         source: "ifrc-go",
-        scanned: results.length,
+        scanned,
         inserted,
         updated,
         skipped,
-      },
-      { headers: corsHeaders },
-    );
+      });
+    }
+
+    // Provider 2: ReliefWeb (placeholder minimal implementation)
+    // We will add full parsing next step; for safety, we only try RSS feed
+    // and upsert items with deep `link`.
+    {
+      let inserted = 0;
+      let updated = 0;
+      let skipped = 0;
+      let scanned = 0;
+
+      try {
+        // ReliefWeb provides feeds for queries. We start broad for funding calls/appeals.
+        // Query params may evolve; failure will be caught so IFRC remains working.
+        const RELIEFWEB_RSS =
+          "https://reliefweb.int/rss/search?query=%22call%20for%20proposals%22%20OR%20%22appeal%22&limit=30";
+
+        const r = await fetch(RELIEFWEB_RSS, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; NGOBridgeBot/1.0)",
+            "Accept": "application/rss+xml,text/xml;q=0.9,application/xml;q=0.8,*/*;q=0.5",
+          },
+        });
+        if (!r.ok) throw new Error(`ReliefWeb RSS ${r.status}`);
+        const xml = await r.text();
+
+        // Very small regex-based RSS parsing to avoid adding heavy deps.
+        // Next step would be to replace this with real XML parsing.
+        const items = Array.from(xml.matchAll(/<item>[\s\S]*?<title>([\s\S]*?)<\/title>[\s\S]*?<link>([\s\S]*?)<\/link>/g));
+        scanned = items.length;
+
+        for (const m of items) {
+          const titleRaw = m[1] ?? "";
+          const linkRaw = m[2] ?? "";
+          const title = String(titleRaw).replace(/<!\[CDATA\[|\]\]>/g, "").trim().slice(0, 300);
+          const url = String(linkRaw).replace(/<!\[CDATA\[|\]\]>/g, "").trim();
+
+          if (!title || !url || !/^https?:\/\//i.test(url)) { skipped++; continue; }
+
+          const funder = "ReliefWeb";
+          const row: Record<string, unknown> = {
+            funder,
+            title,
+            summary: null,
+            url,
+            sectors: [],
+            countries: [],
+            source: "reliefweb",
+            is_verified: true,
+            is_active: true,
+            min_amount: null,
+            max_amount: null,
+            currency: "USD",
+            deadline: null,
+          };
+
+          try {
+            const res = await upsertByUrl(url, row);
+            if (res.action === "inserted") inserted++; else updated++;
+          } catch (err) {
+            console.error("reliefweb upsert error:", (err as Error).message);
+            skipped++;
+          }
+        }
+      } catch (err) {
+        totals.providers.push({
+          source: "reliefweb",
+          scanned,
+          inserted,
+          updated,
+          skipped,
+          error: (err as Error).message,
+        });
+      }
+
+      totals.providers.push({
+        source: "reliefweb",
+        scanned,
+        inserted,
+        updated,
+        skipped,
+      });
+    }
+
+    return Response.json(totals, { headers: corsHeaders });
   } catch (e) {
     console.error("ingest error:", (e as Error).message);
     return Response.json({ error: (e as Error).message }, { status: 500, headers: corsHeaders });
