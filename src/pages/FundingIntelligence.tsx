@@ -118,10 +118,25 @@ export default function FundingIntelligence() {
               {ingesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <DownloadSimple weight="duotone" className="h-4 w-4" />}
               {ingesting ? "Fetching…" : "Refresh live sources"}
             </Button>
-            <Button onClick={discover} disabled={!orgId || running} className="gap-2">
-              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <MagnifyingGlass weight="duotone" className="h-4 w-4" />}
-              {running ? "Scanning…" : "Run AI Scan"}
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={async () => {
+                if (!orgId) return;
+                setRunning(true);
+                const { error } = await supabase.functions.invoke("clear-funding-results", { body: { organization_id: orgId } });
+                setRunning(false);
+                if (error) return toast({ title: "Clear failed", description: error.message, variant: "destructive" });
+                toast({ title: "Cleared", description: "Removed existing match results for this organization." });
+                // Refresh list
+                loadMatches();
+              }} disabled={!orgId || running} className="gap-2">
+                <X className="h-4 w-4" /> Clear results
+              </Button>
+              <Button onClick={discover} disabled={!orgId || running} className="gap-2">
+                {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <MagnifyingGlass weight="duotone" className="h-4 w-4" />}
+                {running ? "Scanning…" : "Run AI Scan"}
+              </Button>
+            </div>
+
           </div>
         </div>
 
