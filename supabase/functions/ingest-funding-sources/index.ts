@@ -89,6 +89,18 @@ Deno.serve(async (req) => {
         scanned = results.length;
         console.log("ifrc results:", results.length);
 
+        const verify = async (url: string) => {
+          try {
+            const head = await fetch(url, {
+              method: "GET",
+              headers: { Range: "bytes=0-0" },
+            });
+            return head.ok;
+          } catch {
+            return false;
+          }
+        };
+
         for (const a of results) {
           const id = a?.id;
           const name = String(a?.name ?? "").trim().slice(0, 300);
@@ -107,6 +119,11 @@ Deno.serve(async (req) => {
           if (status && !/active|launched|open|pledged/i.test(status)) { skipped++; continue; }
 
           const url = `https://go.ifrc.org/appeals/${id}`;
+
+          // Ensure it exists (avoid 404 “wandered off” URLs).
+          const ok = await verify(url);
+          if (!ok) { skipped++; continue; }
+
           const funder = "IFRC (International Federation of Red Cross)";
           const sectorGuess = dtype && DTYPE_TO_SECTOR[dtype] ? [DTYPE_TO_SECTOR[dtype]] : [];
 
@@ -164,9 +181,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Provider 2: ReliefWeb (placeholder minimal implementation)
-    // We will add full parsing next step; for safety, we only try RSS feed
-    // and upsert items with deep `link`.
+    // Provider 2: ReliefWeb
+    // Goal: ingest only opportunities whose URL is a real deep posting page.
+    // This placeholder is safe: it only trusts RSS item links and verifies they are reachable (200).
     {
       let inserted = 0;
       let updated = 0;
@@ -174,8 +191,6 @@ Deno.serve(async (req) => {
       let scanned = 0;
 
       try {
-        // ReliefWeb provides feeds for queries. We start broad for funding calls/appeals.
-        // Query params may evolve; failure will be caught so IFRC remains working.
         const RELIEFWEB_RSS =
           "https://reliefweb.int/rss/search?query=%22call%20for%20proposals%22%20OR%20%22appeal%22&limit=30";
 
@@ -186,12 +201,28 @@ Deno.serve(async (req) => {
           },
         });
         if (!r.ok) throw new Error(`ReliefWeb RSS ${r.status}`);
-        const xml = await r.text();
 
-        // Very small regex-based RSS parsing to avoid adding heavy deps.
-        // Next step would be to replace this with real XML parsing.
-        const items = Array.from(xml.matchAll(/<item>[\s\S]*?<title>([\s\S]*?)<\/title>[\s\S]*?<link>([\s\S]*?)<\/link>/g));
+        const xml = await r.text();
+        const items = Array.from(
+          xml.matchAll(
+            /<item>[\s\S]*?<title>([\s\S]*?)<\/title>[\s\S]*?<link>([\s\S]*?)<\/link>/g,
+          ),
+        );
         scanned = items.length;
+
+        // Verify deep links to avoid storing 404 pages.
+        const verify = async (url: string) => {
+          try {
+            const head = await fetch(url, {
+              method: "GET",
+              // keep it cheap; many origins support Range
+              headers: { Range: "bytes=0-0" },
+            });
+            return head.ok;
+          } catch {
+            return false;
+          }
+        };
 
         for (const m of items) {
           const titleRaw = m[1] ?? "";
@@ -201,9 +232,19 @@ Deno.serve(async (req) => {
 
           if (!title || !url || !/^https?:\/\//i.test(url)) { skipped++; continue; }
 
-          const funder = "ReliefWeb";
+          // Only accept ReliefWeb-looking detail URLs.
+          // ReliefWeb typically uses /reports/..., /updates/..., /articles/... etc.
+          if (!/reliefweb\.int\/(reports|updates|articles|news|jobs|organizations|projects|documents|sites)\//i.test(url)) {
+            skipped++;
+            continue;
+          }
+
+          // Ensure it exists (avoid 404 "wandered off" links).
+          const ok = await verify(url);
+          if (!ok) { skipped++; continue; }
+
           const row: Record<string, unknown> = {
-            funder,
+            funder: "ReliefWeb",
             title,
             summary: null,
             url,
