@@ -144,7 +144,11 @@ export default function Dashboard() {
                 <div className="rounded-lg border border-border bg-card">
                   <div className="flex items-center justify-between p-5 border-b border-border">
                     <h2 className="font-display font-semibold flex items-center gap-2"><Building2 className="h-4 w-4 text-primary" /> My Organizations</h2>
-                    <Button size="sm" asChild className="gap-1"><Link to="/create-organization"><Plus className="h-3.5 w-3.5" /> Add</Link></Button>
+                    {orgs.length === 0 && (
+                      <Button size="sm" asChild className="gap-1">
+                        <Link to="/create-organization"><Plus className="h-3.5 w-3.5" /> Add</Link>
+                      </Button>
+                    )}
                   </div>
                   <div className="p-5 space-y-3">
                     {orgs.length === 0 ? (

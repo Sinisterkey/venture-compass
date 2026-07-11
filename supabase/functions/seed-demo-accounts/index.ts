@@ -85,16 +85,27 @@ Deno.serve(async (req) => {
     }
 
     // Seed organizations for the demo NGO
+    // Enforce the product rule: one NGO organization per user.
     const ngoId = ngoUserIds["ngo@demo.com"];
     if (ngoId) {
-      for (const o of DEMO_ORGS) {
-        const { data: ex } = await admin.from("organizations").select("id").eq("owner_id", ngoId).eq("name", o.name).maybeSingle();
-        if (ex) continue;
+      const { data: existing } = await admin.from("organizations")
+        .select("id")
+        .eq("owner_id", ngoId)
+        .maybeSingle();
+
+      if (!existing) {
+        // Pick the first demo org as the single organization for this account.
+        const o = DEMO_ORGS[0];
         await admin.from("organizations").insert({
-          owner_id: ngoId, ...o, is_published: true, is_verified: true, currency: "ZMW",
+          owner_id: ngoId,
+          ...o,
+          is_published: true,
+          is_verified: true,
+          currency: "ZMW",
         });
       }
     }
+
 
     return new Response(JSON.stringify({ ok: true, results }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {

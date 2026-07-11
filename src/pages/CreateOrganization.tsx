@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -38,6 +39,7 @@ export default function CreateOrganization() {
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [proposalOpen, setProposalOpen] = useState(false);
+  const [existingOrgId, setExistingOrgId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "", mission: "", short_description: "", sector: "", country: "", province: "",
     target_beneficiaries: "", beneficiary_type: "", impact_area: "",
@@ -47,6 +49,39 @@ export default function CreateOrganization() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!user) return <Navigate to="/login" replace />;
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("organizations")
+        .select("id")
+        .eq("owner_id", user.id)
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data?.id) {
+        setExistingOrgId(data.id);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!existingOrgId) return;
+    navigate(`/organizations/${existingOrgId}`, { replace: true });
+  }, [existingOrgId, navigate]);
+
+  if (existingOrgId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const toggle = <T,>(arr: T[], v: T) => arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
