@@ -247,9 +247,9 @@ export default function FundingIntelligence() {
                       return (
                         <div className="pt-2">
                           <Button variant="outline" size="sm" asChild className="gap-2">
-                            <a href={u.toString()} target="_blank" rel="noreferrer">
+                            <Link to={u.toString()} target="_blank" rel="noreferrer">
                               Open funding call <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
+                            </Link>
                           </Button>
                         </div>
                       );
