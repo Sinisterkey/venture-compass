@@ -85,7 +85,7 @@ export default function FundingIntelligence() {
     const { data, error } = await supabase.functions.invoke("ingest-funding-sources");
     setIngesting(false);
     if (error) return toast({ title: "Refresh failed", description: error.message, variant: "destructive" });
-    toast({ title: "Live sources refreshed", description: `Added ${data?.inserted ?? 0}, updated ${data?.updated ?? 0} opportunities from ReliefWeb.` });
+    toast({ title: "Live sources refreshed", description: `Added ${data?.inserted ?? 0}, updated ${data?.updated ?? 0} opportunities. Run the AI Scan to see new matches.` });
   }
 
   if (loading) return <div className="min-h-screen grid place-items-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
