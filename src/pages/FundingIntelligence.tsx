@@ -122,19 +122,40 @@ export default function FundingIntelligence() {
               <Button size="sm" variant="outline" onClick={async () => {
                 if (!orgId) return;
                 setRunning(true);
-                const { error } = await supabase.functions.invoke("clear-funding-results", { body: { organization_id: orgId } });
+
+                // 1) Clear the user-facing scored results for this org
+                const { error: clearMatchesErr } = await supabase.functions.invoke(
+                  "clear-funding-results",
+                  { body: { organization_id: orgId } },
+                );
+
+                // 2) Clear opportunities across all sources so a new AI scan cannot reuse the same dataset
+                if (!clearMatchesErr) {
+                  const { error: clearOppsErr } = await supabase.functions.invoke(
+                    "clear-funding-opportunities",
+                    { body: { confirm: true } },
+                  );
+                  if (clearOppsErr) {
+                    setRunning(false);
+                    return toast({ title: "Clear failed", description: clearOppsErr.message, variant: "destructive" });
+                  }
+                } else {
+                  setRunning(false);
+                  return toast({ title: "Clear failed", description: clearMatchesErr.message, variant: "destructive" });
+                }
+
                 setRunning(false);
-                if (error) return toast({ title: "Clear failed", description: error.message, variant: "destructive" });
-                toast({ title: "Cleared", description: "Removed existing match results for this organization." });
-                // Refresh list
+                toast({ title: "Cleared", description: "Removed matches for this org and cleared all funding opportunities." });
                 loadMatches();
               }} disabled={!orgId || running} className="gap-2">
-                <X className="h-4 w-4" /> Clear results
+                <X className="h-4 w-4" /> Clear + reset
               </Button>
+
               <Button onClick={discover} disabled={!orgId || running} className="gap-2">
                 {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <MagnifyingGlass weight="duotone" className="h-4 w-4" />}
                 {running ? "Scanning…" : "Run AI Scan"}
               </Button>
+
             </div>
 
           </div>
