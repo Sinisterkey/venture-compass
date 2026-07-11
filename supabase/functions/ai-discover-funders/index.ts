@@ -1,8 +1,45 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, callLovableAI } from "../_shared/ai.ts";
 
-// Discover and score funding opportunities for one organization.
-// Uses rule-based prefilter + AI ranking for the top candidates.
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+async function callLovableAI(messages: any[], schema?: any): Promise<any> {
+  const key = Deno.env.get("LOVABLE_API_KEY");
+  if (!key) throw new Error("LOVABLE_API_KEY not configured");
+
+  const body: any = {
+    model: "google/gemini-flash-preview",
+    messages,
+  };
+  if (schema) {
+    body.tools = [{ type: "function", function: { name: "respond", description: "Return the structured response.", parameters: schema } }];
+    body.tool_choice = { type: "function", function: { name: "respond" } };
+  }
+
+  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (resp.status === 429) throw new Error("Rate limit exceeded. Try again shortly.");
+  if (resp.status === 402) throw new Error("AI credits exhausted. Please add credits to continue.");
+  if (!resp.ok) throw new Error(`AI gateway error ${resp.status}: ${await resp.text()}`);
+
+  const data = await resp.json();
+  if (schema) {
+    const args = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    if (!args) throw new Error("AI returned no structured output");
+    return JSON.parse(args);
+  }
+  return data?.choices?.[0]?.message?.content ?? "";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -16,7 +53,6 @@ Deno.serve(async (req) => {
     const { data: opps } = await supa.from("funding_opportunities").select("*").eq("is_active", true);
     if (!opps?.length) return Response.json({ matches: [] }, { headers: corsHeaders });
 
-    // Rule-based prefilter score
     const prescored = opps.map((o) => {
       let base = 30;
       const reasons: string[] = [];
@@ -31,7 +67,6 @@ Deno.serve(async (req) => {
       return { opp: o, base: Math.min(base, 95), reasons };
     }).sort((a, b) => b.base - a.base);
 
-    // Take top 8 candidates and let AI refine the score + reasons
     const top = prescored.slice(0, 8);
     const schema = {
       type: "object",
@@ -77,11 +112,9 @@ Deno.serve(async (req) => {
       ], schema);
       aiResults = ai.results ?? [];
     } catch (_) {
-      // AI failure: fall back to rule-based
       aiResults = top.map(({ opp, base, reasons }) => ({ opportunity_id: opp.id, score: base, reasons, gaps: [] }));
     }
 
-    // Upsert matches
     const rows = aiResults.map((r) => ({
       organization_id,
       opportunity_id: r.opportunity_id,
@@ -96,7 +129,6 @@ Deno.serve(async (req) => {
       await supa.from("funding_matches").upsert(rows, { onConflict: "organization_id,opportunity_id" });
     }
 
-    // Notify owner of the top new match
     const topMatch = aiResults.sort((a, b) => b.score - a.score)[0];
     if (topMatch && topMatch.score >= 70) {
       const topOpp = top.find(t => t.opp.id === topMatch.opportunity_id)?.opp;
