@@ -1,75 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/ai.ts";
 
-// Live funding-opportunity ingester.
-//
-// Source: IFRC GO public API (goadmin.ifrc.org). This endpoint is fully open,
-// reachable from Deno Deploy egress, and every appeal returns a deep link to
-// its dedicated page on go.ifrc.org, so "Open funding call" always lands on
-// the exact appeal — never a funder homepage.
-
-const IFRC_URL =
-  "https://goadmin.ifrc.org/api/v2/appeal/" +
-  "?region=0" +           // 0 = Africa
-  "&limit=40" +
-  "&ordering=-start_date";
-
-const DTYPE_TO_SECTOR: Record<string, string> = {
-  "Epidemic": "Health",
-  "Complex Emergency": "Human Rights",
-  "Population Movement": "Refugees & Migration",
-  "Food Insecurity": "Agriculture",
-  "Drought": "Climate",
-  "Flood": "WASH",
-  "Cyclone": "Climate",
-  "Earthquake": "Social Services",
-  "Fire": "Social Services",
-  "Civil Unrest": "Human Rights",
-  "Storm Surge": "Climate",
-};
-
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
-  // Keep IFRC working. Add other providers one-by-one.
-  // Any provider failure must not prevent others from ingesting.
-  try {
-    const supa = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
-    const upsertByUrl = async (url: string, row: Record<string, unknown>) => {
-      const { data: existing } = await supa
-        .from("funding_opportunities")
-        .select("id")
-        .eq("url", url)
-        .maybeSingle();
-
-      if (existing?.id) {
-        const { error } = await supa.from("funding_opportunities").update(row).eq("id", existing.id);
-        if (error) throw error;
-        return { action: "updated" as const, id: existing.id };
-      }
-
-      const { error } = await supa.from("funding_opportunities").insert(row);
-      if (error) throw error;
-      return { action: "inserted" as const };
-    };
-
-    let totals = {
-      ok: true,
-      providers: [] as Array<{
-        source: string;
-        scanned: number;
-        inserted: number;
-        updated: number;
-        skipped: number;
-        error?: string;
-      }>,
-    };
-
-    // Provider 1: IFRC GO (disabled per request)
+  // Provider 1: IFRC GO (disabled)
 
     // Provider 2: ReliefWeb
 
