@@ -51,6 +51,8 @@ const App = () => (
               <Route path="/proposals" element={<Proposals />} />
               <Route path="/proposals/:id" element={<ProposalEditor />} />
               <Route path="/funding-intelligence" element={<FundingIntelligence />} />
+              <Route path="/funding-intelligence/" element={<FundingIntelligence />} />
+
               <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

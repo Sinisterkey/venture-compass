@@ -168,57 +168,35 @@ export default function FundingIntelligence() {
               <Button
                 onClick={async () => {
                   if (!orgId) return;
-                  setRunning(true);
+
+                  // Show progress immediately
                   setScanSubtitle("Starting ingest + scan");
                   setScanSteps(defaultSteps);
                   setScanVisible(true);
 
-                  // Step 1: show ingest/provenance UI immediately (we already know current ingest source)
+                  // Mark ingest as running
                   setScanSteps((prev) =>
-                    prev.map((s) =>
-                      s.key === "ingest" ? { ...s, status: "running" } : s,
-                    ),
+                    prev.map((s) => (s.key === "ingest" ? { ...s, status: "running" } : s)),
                   );
 
-                  try {
-                    // Optional: refresh live sources first so “source” is accurate
-                    // (kept commented because your existing flow already ingests via Refresh Live Sources)
+                  setRunning(true);
 
-                    // Run scoring
+                  try {
                     await discover();
 
+                    // Since our current edge function doesn't stream steps,
+                    // we update the UI deterministically after completion.
                     setScanSteps((prev) => prev.map((s) => (s.key === "ingest" ? { ...s, status: "done" } : s)));
-                    setScanSteps((prev) =>
-                      prev.map((s) => (s.key === "index" ? { ...s, status: "running" } : s)),
-                    );
-                    setScanSubtitle("Scoring opportunities with AI");
-                    setScanSteps((prev) =>
-                      prev.map((s) =>
-                        s.key === "index" ? { ...s, status: "done" } : s.key === "score" ? { ...s, status: "running" } : s,
-                      ),
-                    );
-
-                    // finalize after the discover completes
-                    setScanSteps((prev) =>
-                      prev.map((s) =>
-                        s.key === "score" ? { ...s, status: "done" } : s.key === "finalize" ? { ...s, status: "running" } : s,
-                      ),
-                    );
-                    setScanSteps((prev) =>
-                      prev.map((s) =>
-                        s.key === "finalize" ? { ...s, status: "done" } : s,
-                      ),
-                    );
-
-                    setScanVisible(false);
+                    setScanSteps((prev) => prev.map((s) => (s.key === "score" ? { ...s, status: "done" } : s)));
+                    setScanSubtitle("Done");
                   } catch (e: any) {
                     setScanSteps((prev) => prev.map((s) => (s.status === "running" ? { ...s, status: "error" } : s)));
                     setScanSubtitle("Scan failed");
-                    setScanVisible(true);
                     toast({ title: "AI Scan failed", description: e?.message ?? String(e), variant: "destructive" });
                   } finally {
                     setRunning(false);
                     loadMatches();
+                    setTimeout(() => setScanVisible(false), 1200);
                   }
                 }}
                 disabled={!orgId || running}
@@ -243,7 +221,13 @@ export default function FundingIntelligence() {
           </Card>
         )}
 
-        {orgs.length > 0 && visible.length === 0 && !busy && (
+        <FundingScanProgress
+          visible={scanVisible}
+          steps={scanSteps.length ? scanSteps : defaultSteps}
+          resultSubtitle={scanSubtitle}
+        />
+
+        {orgs.length > 0 && visible.length === 0 && !busy && !scanVisible && (
           <Card className="p-10 text-center border-dashed">
             <Target weight="duotone" className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
             <p className="font-semibold mb-2">No matches computed yet</p>
@@ -252,6 +236,7 @@ export default function FundingIntelligence() {
         )}
 
         <div className="grid gap-4">
+
           {visible.map((m) => (
             <Card key={m.id} className="p-6 hover:border-primary/40 transition-colors">
               <div className="flex flex-col md:flex-row md:items-start gap-6">
