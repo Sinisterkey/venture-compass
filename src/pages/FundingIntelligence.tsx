@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AIScoreBadge } from "@/components/AIScoreBadge";
+import { FundingScanProgress, type ScanStep } from "@/components/FundingScanProgress";
+
 import { toast } from "@/hooks/use-toast";
 import { Loader2, ExternalLink, Bookmark, BookmarkCheck, X } from "lucide-react";
 import { MagnifyingGlass, Sparkle, Compass, Buildings, Target, CalendarBlank, DownloadSimple } from "@phosphor-icons/react";
@@ -37,6 +39,10 @@ export default function FundingIntelligence() {
   const [busy, setBusy] = useState(false);
   const [running, setRunning] = useState(false);
   const [ingesting, setIngesting] = useState(false);
+  const [scanSteps, setScanSteps] = useState<ScanStep[]>([]);
+  const [scanVisible, setScanVisible] = useState(false);
+  const [scanSubtitle, setScanSubtitle] = useState<string | undefined>(undefined);
+
 
   useEffect(() => {
     if (!user) return;
@@ -92,6 +98,14 @@ export default function FundingIntelligence() {
   if (!user) return <Navigate to="/login" replace />;
 
   const visible = matches.filter((m) => !m.is_dismissed);
+
+  const defaultSteps: ScanStep[] = [
+    { key: "ingest", label: "Ingesting sources", status: "pending", source: "ReliefWeb" },
+    { key: "index", label: "Preparing opportunities", status: "pending" },
+    { key: "score", label: "Scoring matches with AI", status: "pending" },
+    { key: "finalize", label: "Saving results", status: "pending" },
+  ];
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -151,10 +165,69 @@ export default function FundingIntelligence() {
                 <X className="h-4 w-4" /> Clear + reset
               </Button>
 
-              <Button onClick={discover} disabled={!orgId || running} className="gap-2">
+              <Button
+                onClick={async () => {
+                  if (!orgId) return;
+                  setRunning(true);
+                  setScanSubtitle("Starting ingest + scan");
+                  setScanSteps(defaultSteps);
+                  setScanVisible(true);
+
+                  // Step 1: show ingest/provenance UI immediately (we already know current ingest source)
+                  setScanSteps((prev) =>
+                    prev.map((s) =>
+                      s.key === "ingest" ? { ...s, status: "running" } : s,
+                    ),
+                  );
+
+                  try {
+                    // Optional: refresh live sources first so “source” is accurate
+                    // (kept commented because your existing flow already ingests via Refresh Live Sources)
+
+                    // Run scoring
+                    await discover();
+
+                    setScanSteps((prev) => prev.map((s) => (s.key === "ingest" ? { ...s, status: "done" } : s)));
+                    setScanSteps((prev) =>
+                      prev.map((s) => (s.key === "index" ? { ...s, status: "running" } : s)),
+                    );
+                    setScanSubtitle("Scoring opportunities with AI");
+                    setScanSteps((prev) =>
+                      prev.map((s) =>
+                        s.key === "index" ? { ...s, status: "done" } : s.key === "score" ? { ...s, status: "running" } : s,
+                      ),
+                    );
+
+                    // finalize after the discover completes
+                    setScanSteps((prev) =>
+                      prev.map((s) =>
+                        s.key === "score" ? { ...s, status: "done" } : s.key === "finalize" ? { ...s, status: "running" } : s,
+                      ),
+                    );
+                    setScanSteps((prev) =>
+                      prev.map((s) =>
+                        s.key === "finalize" ? { ...s, status: "done" } : s,
+                      ),
+                    );
+
+                    setScanVisible(false);
+                  } catch (e: any) {
+                    setScanSteps((prev) => prev.map((s) => (s.status === "running" ? { ...s, status: "error" } : s)));
+                    setScanSubtitle("Scan failed");
+                    setScanVisible(true);
+                    toast({ title: "AI Scan failed", description: e?.message ?? String(e), variant: "destructive" });
+                  } finally {
+                    setRunning(false);
+                    loadMatches();
+                  }
+                }}
+                disabled={!orgId || running}
+                className="gap-2"
+              >
                 {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <MagnifyingGlass weight="duotone" className="h-4 w-4" />}
                 {running ? "Scanning…" : "Run AI Scan"}
               </Button>
+
 
             </div>
 
