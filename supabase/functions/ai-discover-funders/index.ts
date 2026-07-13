@@ -46,12 +46,39 @@ Deno.serve(async (req) => {
     const { organization_id } = await req.json();
     if (!organization_id) throw new Error("organization_id required");
 
-    const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: org } = await supa.from("organizations").select("*").eq("id", organization_id).maybeSingle();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl) throw new Error("SUPABASE_URL is not set in function secrets.");
+    if (!serviceRoleKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set in function secrets.");
+
+    const supa = createClient(supabaseUrl, serviceRoleKey);
+
+    let org: any = null;
+    try {
+      const orgResp = await supa.from("organizations").select("*").eq("id", organization_id).maybeSingle();
+      org = orgResp.data;
+    } catch (dbErr) {
+      return Response.json(
+        { error: "Failed to read organization from DB", details: (dbErr as Error).message },
+        { status: 500, headers: corsHeaders },
+      );
+    }
+
     if (!org) throw new Error("Organization not found");
 
-    const { data: opps } = await supa.from("funding_opportunities").select("*").eq("is_active", true);
-    if (!opps?.length) return Response.json({ matches: [] }, { headers: corsHeaders });
+    let opps: any[] | null = null;
+    try {
+      const oppResp = await supa.from("funding_opportunities").select("*").eq("is_active", true);
+      opps = oppResp.data as any[] | null;
+    } catch (dbErr) {
+      return Response.json(
+        { error: "Failed to read funding_opportunities from DB", details: (dbErr as Error).message },
+        { status: 500, headers: corsHeaders },
+      );
+    }
+
+    const activeCount = opps?.length ?? 0;
+    if (!activeCount) return Response.json({ matches: [], count: 0, debug: { active_opportunities: 0 } }, { headers: corsHeaders });
 
     const prescored = opps.map((o) => {
       let base = 30;
