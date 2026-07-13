@@ -38,6 +38,8 @@ Deno.serve(async (req) => {
 
     const totals = {
       ok: true,
+      inserted: 0,
+      updated: 0,
       providers: [] as Array<{
         source: string;
         scanned: number;
@@ -73,6 +75,8 @@ Deno.serve(async (req) => {
       } catch (err) {
         totals.providers.push({ source: "reliefweb", scanned, inserted, updated, skipped, error: (err as Error).message });
       }
+      totals.inserted += inserted;
+      totals.updated += updated;
       totals.providers.push({ source: "reliefweb", scanned, inserted, updated, skipped });
     }
 
@@ -102,6 +106,8 @@ Deno.serve(async (req) => {
       } catch (err) {
         totals.providers.push({ source: "undp", scanned, inserted, updated, skipped, error: (err as Error).message });
       }
+      totals.inserted += inserted;
+      totals.updated += updated;
       totals.providers.push({ source: "undp", scanned, inserted, updated, skipped });
     }
 
@@ -130,6 +136,8 @@ Deno.serve(async (req) => {
       } catch (err) {
         totals.providers.push({ source: "devex", scanned, inserted, updated, skipped, error: (err as Error).message });
       }
+      totals.inserted += inserted;
+      totals.updated += updated;
       totals.providers.push({ source: "devex", scanned, inserted, updated, skipped });
     }
 

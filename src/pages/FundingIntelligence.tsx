@@ -71,7 +71,16 @@ export default function FundingIntelligence() {
   async function discover() {
     if (!orgId) return;
     setRunning(true);
-    const { error } = await supabase.functions.invoke("ai-discover-funders", { body: { organization_id: orgId } });
+
+    // Ensure the invoke carries the current user's JWT (some Edge Functions reject anon).
+    const session = await supabase.auth.getSession();
+    const token = session.data?.session?.access_token;
+
+    const { error } = await supabase.functions.invoke("ai-discover-funders", {
+      body: { organization_id: orgId },
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+
     setRunning(false);
     if (error) return toast({ title: "Discovery failed", description: error.message, variant: "destructive" });
     toast({ title: "New matches ready", description: "AI has scored the top funders for this organization." });
