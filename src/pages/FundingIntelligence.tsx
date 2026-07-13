@@ -191,6 +191,27 @@ export default function FundingIntelligence() {
                   setRunning(true);
 
                   try {
+                    // 1) Ensure we have opportunities to score
+                    const { data: ingestData, error: ingestErr } = await supabase.functions.invoke("ingest-funding-sources");
+
+                    if (ingestErr) throw ingestErr;
+
+                    const inserted = ingestData?.inserted ?? 0;
+                    const updated = ingestData?.updated ?? 0;
+                    const total = inserted + updated;
+
+                    if (total === 0) {
+                      setScanSteps((prev) => prev.map((s) => (s.status === "running" ? { ...s, status: "error" } : s)));
+                      setScanSubtitle("No opportunities ingested");
+                      toast({
+                        title: "No opportunities ingested; nothing to score",
+                        description: "The ingest step did not add or update any active funding opportunities. Try refreshing sources or run again later.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    // 2) Score matches
                     await discover();
 
                     // Since our current edge function doesn't stream steps,
