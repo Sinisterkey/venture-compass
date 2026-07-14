@@ -1,5 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/ai.ts";
+
+// Inline CORS header (avoid shared import bundling issues)
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 // Clear funding_matches for a single organization (owner-scoped).
 // Does NOT delete funding_opportunities.
