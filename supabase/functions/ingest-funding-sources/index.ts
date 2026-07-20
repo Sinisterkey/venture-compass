@@ -1,63 +1,131 @@
-/** 
- * NOTE: Supabase edge runtime uses Deno npm imports.
- * Editor tooling may not understand `npm:` specifiers or Deno globals.
+/**
+ * NGO Bridge — Funding Intelligence Engine: Ingestion
+ *
+ * Reads active data sources from the `data_sources` table, runs the matching connector
+ * for each, normalizes opportunities to the canonical schema, upserts into
+ * `funding_opportunities` (dedupe by URL), archives expired opportunities, and writes
+ * a per-run log to `connector_logs`.
  */
 // @ts-ignore
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { loadFundingSourcesConfigFromEnv } from "./src/config";
-import type { FundingConnector, FundingSourceConfig, FundingSourcesConfigFile } from "./src/types";
-import { getSupabaseClient, upsertFundingOpportunityByUrl } from "./src/db";
+import { loadFundingSourcesConfigFromEnv } from "./src/config.ts";
+import type {
+  ConnectorOpportunity,
+  ConnectorContext,
+  DataSourceRow,
+  FundingConnector,
+  FundingSourceConfig,
+  FundingSourcesConfigFile,
+  IngestionSummary,
+  OpportunityUpsertRow,
+  ProviderIngestionResult,
+} from "./src/types.ts";
+import {
+  archiveExpiredOpportunities,
+  getActiveDataSources,
+  getSupabaseClient,
+  normalizeOpportunity,
+  updateDataSourceLastRun,
+  upsertFundingOpportunity,
+  writeConnectorLog,
+} from "./src/db.ts";
 
-import ReliefWebConnector from "./src/connectors/reliefweb";
-import UNDPConnector from "./src/connectors/undp";
-import DevexConnector from "./src/connectors/devex";
+import ReliefWebConnector from "./src/connectors/reliefweb.ts";
+import UNDPConnector from "./src/connectors/undp.ts";
+import DevexConnector from "./src/connectors/devex.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
 function getNowIso() {
   return new Date().toISOString();
 }
 
-function safeUpper(s: unknown): string {
-  return typeof s === "string" ? s.toUpperCase() : "";
+function getConnectorForSource(name: string): FundingConnector | null {
+  if (name === "ReliefWeb") return ReliefWebConnector as any;
+  if (name === "UNDP") return UNDPConnector as any;
+  if (name === "Devex") return DevexConnector as any;
+  return null;
 }
 
-function hasEnabledConnector(config: FundingSourcesConfigFile | null): boolean {
-  return !!config?.sources?.some((s) => s.enabled);
+function dataSourceRowToConfig(row: DataSourceRow): FundingSourceConfig {
+  return {
+    source_name: row.name,
+    connector_type: (row.source_type as any) ?? "RSS",
+    enabled: row.is_active,
+    feed_url: row.source_url,
+    api_endpoint: row.source_url,
+    extraction_method: row.extraction_method ?? undefined,
+    max_items: 50,
+  };
+}
+
+function mergeConfigSources(
+  dbSources: DataSourceRow[],
+  fileConfig: FundingSourcesConfigFile | null,
+): DataSourceRow[] {
+  if (!fileConfig?.sources?.length) return dbSources;
+  const fileNames = new Set(fileConfig.sources.map((s) => s.source_name.toLowerCase()));
+  const merged = [...dbSources];
+  for (const s of fileConfig.sources) {
+    if (!s.enabled) continue;
+    if (!fileNames.has(s.source_name.toLowerCase())) continue;
+    const exists = merged.some((m) => m.name.toLowerCase() === s.source_name.toLowerCase());
+    if (!exists) {
+      merged.push({
+        id: `env-${s.source_name}`,
+        name: s.source_name,
+        source_type: s.connector_type,
+        source_url: s.feed_url ?? s.api_endpoint ?? "",
+        extraction_method: s.parser_type ?? null,
+        schedule_cron: s.crawl_interval ?? null,
+        is_active: s.enabled,
+        last_run_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+  }
+  return merged;
 }
 
 async function invokeConnector(
   supa: any,
-  config: FundingSourceConfig,
+  sourceRow: DataSourceRow,
   connector: FundingConnector,
-  ctx: { nowIso: string; lastSyncIso?: string },
-) {
+  ctx: ConnectorContext,
+): Promise<ProviderIngestionResult> {
+  const startedAt = getNowIso();
   const started = Date.now();
+  const config = dataSourceRowToConfig(sourceRow);
 
-  const baseSummary = {
-    source: config.source_name,
+  const base: ProviderIngestionResult = {
+    source: sourceRow.name,
     scanned: 0,
     inserted: 0,
     updated: 0,
     skipped: 0,
-    error: undefined as string | undefined,
+    duplicates_skipped: 0,
+    archived: 0,
   };
+
+  let status: "success" | "partial" | "failed" = "success";
+  let errorMessage: string | null = null;
 
   try {
     const result = await connector.sync(config, ctx);
 
     if (result.shouldDisableSource) {
-      // We can't persist disable into DB yet (config-file loader only),
-      // but we can reflect it in logs.
-      console.warn(`[connector:disable] ${config.source_name} endpoint/config disabled for this run`);
+      console.warn(`[connector:disable] ${sourceRow.name} endpoint disabled for this run`);
     }
 
     let inserted = 0;
     let updated = 0;
     let skipped = 0;
+    let duplicates = 0;
     let scanned = 0;
 
     for (const opp of result.opportunities) {
@@ -65,147 +133,173 @@ async function invokeConnector(
         skipped++;
         continue;
       }
-      scanned++;
-
       const url = String(opp.url).trim();
       if (!/^https?:\/\//i.test(url)) {
         skipped++;
         continue;
       }
+      scanned++;
 
-      // Map connector output to funding_opportunities columns.
-      const row: Record<string, unknown> = {
-        funder: opp.funder,
-        title: String(opp.title).slice(0, 300),
-        summary: opp.summary,
-        url,
-        source: opp.source,
-        sectors: opp.sectors ?? [],
-        countries: opp.countries ?? [],
-        sdgs: opp.sdgs ?? [],
-        beneficiary_types: opp.beneficiary_types ?? [],
-        min_amount: opp.min_amount ?? null,
-        max_amount: opp.max_amount ?? null,
-        currency: opp.currency ?? "USD",
-        deadline: opp.deadline ? new Date(opp.deadline).toISOString().slice(0, 10) : null,
-        is_verified: opp.is_verified ?? true,
-        is_active: opp.is_active ?? true,
-      };
+      const row: OpportunityUpsertRow = normalizeOpportunity(opp as ConnectorOpportunity);
 
-      const action = await upsertFundingOpportunityByUrl(supa, url, row);
-      if (action === "inserted") inserted++;
-      else updated++;
+      try {
+        const action = await upsertFundingOpportunity(supa, row);
+        if (action === "inserted") inserted++;
+        else if (action === "updated") updated++;
+        else duplicates++;
+      } catch (e) {
+        console.error(`[upsert] ${sourceRow.name} url=${url} error=${(e as Error).message}`);
+        skipped++;
+      }
     }
 
+    if (result.error && scanned === 0) {
+      status = "failed";
+      errorMessage = result.error;
+    } else if (result.error) {
+      status = "partial";
+      errorMessage = result.error;
+    }
+
+    const finishedAt = getNowIso();
     const durationMs = Date.now() - started;
+
+    await writeConnectorLog(supa, {
+      data_source_id: sourceRow.id,
+      status,
+      opportunities_found: scanned,
+      opportunities_inserted: inserted,
+      opportunities_updated: updated,
+      duplicates_skipped: duplicates,
+      error_message: errorMessage,
+      duration_ms: durationMs,
+      started_at: startedAt,
+      finished_at: finishedAt,
+    });
+
+    await updateDataSourceLastRun(supa, sourceRow.id, startedAt);
+
     console.log(
-      `[connector] ${config.source_name} ok inserted=${inserted} updated=${updated} scanned=${scanned} skipped=${skipped} durationMs=${durationMs}`,
+      `[connector] ${sourceRow.name} ${status} inserted=${inserted} updated=${updated} duplicates=${duplicates} skipped=${skipped} durationMs=${durationMs}`,
     );
 
     return {
-      ...baseSummary,
+      ...base,
+      scanned,
       inserted,
       updated,
-      scanned,
       skipped,
-      error: undefined,
-      ok: true,
+      duplicates_skipped: duplicates,
+      error: errorMessage ?? undefined,
     };
   } catch (e) {
     const durationMs = Date.now() - started;
     const msg = (e as Error).message;
+    status = "failed";
+    errorMessage = msg;
 
-    console.error(
-      `[connector] ${config.source_name} FAILED durationMs=${durationMs} error=${msg}`,
-    );
+    const finishedAt = getNowIso();
+    await writeConnectorLog(supa, {
+      data_source_id: sourceRow.id,
+      status,
+      opportunities_found: 0,
+      opportunities_inserted: 0,
+      opportunities_updated: 0,
+      duplicates_skipped: 0,
+      error_message: msg,
+      duration_ms: durationMs,
+      started_at: startedAt,
+      finished_at: finishedAt,
+    });
 
-    return {
-      ...baseSummary,
-      error: msg,
-      ok: false,
-    };
+    await updateDataSourceLastRun(supa, sourceRow.id, startedAt);
+
+    console.error(`[connector] ${sourceRow.name} FAILED durationMs=${durationMs} error=${msg}`);
+
+    return { ...base, error: msg };
   }
-}
-
-function getConnectorForSource(config: FundingSourceConfig): FundingConnector | null {
-  // Connectors implemented below are intentionally limited to ReliefWeb/UNDP/Devex for now.
-  // Templates/stubs for the wider list will be added next without hardcoding endpoints.
-  if (config.source_name === "ReliefWeb") return ReliefWebConnector as any;
-  if (config.source_name === "UNDP") return UNDPConnector as any;
-  if (config.source_name === "Devex") return DevexConnector as any;
-
-  return null;
 }
 
 const serve = (globalThis as any)?.Deno?.serve;
 if (!serve) throw new Error("Deno.serve is not available in this runtime");
 
 serve(async (req: any) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 200, headers: corsHeaders });
+  }
 
   try {
     const supa = getSupabaseClient();
 
-    const config = loadFundingSourcesConfigFromEnv();
-    const ctx = {
+    let fileConfig: FundingSourcesConfigFile | null = null;
+    try {
+      fileConfig = loadFundingSourcesConfigFromEnv();
+    } catch {
+      fileConfig = null;
+    }
+
+    let dbSources: DataSourceRow[] = [];
+    try {
+      dbSources = await getActiveDataSources(supa);
+    } catch (e) {
+      console.warn(`[data_sources] could not load from DB: ${(e as Error).message}`);
+    }
+
+    const sources = mergeConfigSources(dbSources, fileConfig);
+
+    const ctx: ConnectorContext = {
       nowIso: getNowIso(),
-      lastSyncIso: config.last_synchronization_timestamp,
+      lastSyncIso: fileConfig?.last_synchronization_timestamp,
     };
 
-    const totals = {
+    const totals: IngestionSummary = {
       ok: true,
       inserted: 0,
       updated: 0,
-      providers: [] as Array<{
-        source: string;
-        scanned: number;
-        inserted: number;
-        updated: number;
-        skipped: number;
-        error?: string;
-      }>,
-      opportunities: [] as any[],
+      providers: [],
     };
 
-    const enabled = config.sources.filter((s) => s.enabled);
-    if (!enabled.length) {
-      totals.ok = true;
-      return Response.json(totals, { headers: corsHeaders });
+    if (!sources.length) {
+      console.warn("[ingest] no active data sources found (DB or env)");
+      return Response.json(totals, { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    for (const sourceConfig of enabled) {
-      const connector = getConnectorForSource(sourceConfig);
+    for (const sourceRow of sources) {
+      const connector = getConnectorForSource(sourceRow.name);
       if (!connector) {
-        console.warn(`[connector] no implementation for source_name=${sourceConfig.source_name}; skipping`);
+        console.warn(`[connector] no implementation for ${sourceRow.name}; skipping`);
         totals.providers.push({
-          source: sourceConfig.source_name,
+          source: sourceRow.name,
           scanned: 0,
           inserted: 0,
           updated: 0,
           skipped: 0,
-          error: "No connector implementation for this source_name",
+          duplicates_skipped: 0,
+          archived: 0,
+          error: "No connector implementation for this source",
         });
         continue;
       }
 
-      const res = await invokeConnector(supa, sourceConfig, connector, ctx);
-      totals.providers.push({
-        source: sourceConfig.source_name,
-        scanned: res.scanned,
-        inserted: res.inserted,
-        updated: res.updated,
-        skipped: res.skipped,
-        error: res.error,
-      });
-
+      const res = await invokeConnector(supa, sourceRow, connector, ctx);
+      totals.providers.push(res);
       totals.inserted += res.inserted;
       totals.updated += res.updated;
     }
 
-    // We don't return all raw connector opportunities yet; only ensure response schema compliance.
-    totals.opportunities = [];
+    // Soft-archive expired opportunities after ingestion
+    let archivedCount = 0;
+    try {
+      archivedCount = await archiveExpiredOpportunities(supa);
+      console.log(`[archive] expired opportunities archived: ${archivedCount}`);
+    } catch (e) {
+      console.error(`[archive] failed: ${(e as Error).message}`);
+    }
 
-    return Response.json(totals, { headers: corsHeaders });
+    return Response.json(
+      { ...totals, archived: archivedCount },
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (e) {
     console.error("Critical ingest error:", (e as Error).message);
     return Response.json(
@@ -214,10 +308,12 @@ serve(async (req: any) => {
         inserted: 0,
         updated: 0,
         providers: [],
-        opportunities: [],
         error: `CRITICAL: ${(e as Error).message}`,
       },
-      { status: 500, headers: corsHeaders },
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });

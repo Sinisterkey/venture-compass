@@ -1,4 +1,4 @@
-import type { FundingConnector, FundingSourceConfig, ConnectorContext, ConnectorOpportunity } from "../types";
+import type { FundingConnector, FundingSourceConfig, ConnectorContext, ConnectorOpportunity } from "../types.ts";
 
 function ensureUrl(s: unknown): string | null {
   if (typeof s !== "string") return null;

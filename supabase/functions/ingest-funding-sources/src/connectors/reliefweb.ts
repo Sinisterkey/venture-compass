@@ -1,4 +1,4 @@
-import type { FundingConnector, FundingSourceConfig, ConnectorContext, ConnectorOpportunity } from "../types";
+import type { FundingConnector, FundingSourceConfig, ConnectorContext, ConnectorOpportunity } from "../types.ts";
 
 // NOTE: Avoid hardcoded URLs in code; endpoint comes from config.feed_url.
 const RELIEFWEB_URL_GUESSING_PROHIBITED = true;

@@ -30,6 +30,8 @@ export type ProviderIngestionResult = {
   inserted: number;
   updated: number;
   skipped: number;
+  duplicates_skipped: number;
+  archived: number;
   error?: string;
 };
 
@@ -47,19 +49,27 @@ export type ConnectorOpportunity = {
   funder: string;
   source: string;
 
-  // Optional normalized fields (mapped later onto funding_opportunities columns)
   deadline?: string | null;
   sectors?: string[];
   countries?: string[];
+  regions?: string[];
   sdgs?: number[];
   beneficiary_types?: string[];
+  focus_areas?: string[];
+  keywords?: string[];
+  eligible_organizations?: string;
 
   min_amount?: number | null;
   max_amount?: number | null;
   currency?: string;
 
+  application_url?: string;
+  source_name?: string;
+  source_url?: string;
+  published_date?: string | null;
+
   is_verified?: boolean;
-  is_active?: boolean; // unless connector reports expired
+  is_active?: boolean;
 };
 
 export type ConnectorContext = {
@@ -72,8 +82,20 @@ export type FundingConnector = {
   sync: (config: FundingSourceConfig, ctx: ConnectorContext) => Promise<{
     ok: boolean;
     opportunities: ConnectorOpportunity[];
-    // If endpoint is misconfigured/unreachable, connector can report it explicitly
     shouldDisableSource?: boolean;
     error?: string;
   }>;
+};
+
+export type DataSourceRow = {
+  id: string;
+  name: string;
+  source_type: string | null;
+  source_url: string;
+  extraction_method: string | null;
+  schedule_cron: string | null;
+  is_active: boolean;
+  last_run_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
